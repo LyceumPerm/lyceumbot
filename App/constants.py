@@ -1,7 +1,8 @@
 TOKEN = ''  # telegram bot token
 SPAM_RESTRICTION = 2  # seconds
 
-GOOGLETABLE_URL = 'https://docs.google.com/spreadsheets/d/10j26yEKp-elG0WtJcKqRKVYrmIwrC4Ot/export?exportFormat=xlsx'
+GOOGLETABLE_ID = '1tGbeevMu_7_n_pKDFjH3cNFNigClVW3v'
+GOOGLETABLE_URL = f'https://docs.google.com/spreadsheets/d/{GOOGLETABLE_ID}/export?exportFormat=xlsx'
 
 classes_10 = (
     '10био', '10геохим', '10исс1', '10исс2', '10линг1', '10линг2', '10мат', '10матэк', '10мед', '10фил', '10фм', '10эк')

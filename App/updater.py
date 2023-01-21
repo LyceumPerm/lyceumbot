@@ -1,4 +1,5 @@
 import datetime
+import os
 
 import schedule
 import wget
@@ -15,8 +16,11 @@ class TableUpdater:
     def download_file(self, url):
         wget.download(url, local_filename)
 
-    def download_and_parse_file(self):
-        update_logger.write(str(datetime.datetime.now()) + '\n\n')
+    def update(self):
+        if os.path.isfile(local_filename):
+            os.remove(local_filename)
+
+        update_logger.write(str(datetime.datetime.now()) + '\n')
         update_logger.flush()
 
         self.download_file(GOOGLETABLE_URL)
@@ -25,7 +29,7 @@ class TableUpdater:
         parser.parse()
 
     def run(self):
-        schedule.every(30).seconds.do(self.download_and_parse_file)
+        schedule.every(9).minutes.do(self.update)
         while True:
             try:
                 schedule.run_pending()
