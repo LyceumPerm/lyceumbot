@@ -1,0 +1,4 @@
+aiogram
+openpyxl
+schedule
+wget
