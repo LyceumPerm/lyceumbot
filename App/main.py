@@ -1,5 +1,5 @@
 import re
-from datetime import datetime
+import datetime
 from pprint import pprint
 
 from aiogram import Bot, Dispatcher, executor, types
@@ -351,13 +351,13 @@ async def check_signup(id):
 
 
 async def check_spam(id):
-    last_time = int(user_db.get_lastmessage(id))
-    now_time = str(datetime.now().time())[0:8].split(':')
-    now = 60 * 60 * int(now_time[0]) + 60 * int(now_time[1]) + int(now_time[2])
+    now = datetime.datetime.now()
+    last_message = datetime.datetime.strptime(user_db.get_lastmessage(id), '%Y-%m-%d %H:%M:%S.%f')
 
-    if abs(now - last_time) < SPAM_RESTRICTION:
+    if abs((last_message - now).total_seconds()) < SPAM_RESTRICTION:
         await bot.send_message(id, SPAM_ERROR)
         return False
+
     user_db.set_lastmessage(id, now)
     return True
 

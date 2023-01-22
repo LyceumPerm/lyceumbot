@@ -45,7 +45,7 @@ CREATE TABLE user
     clas_id      INTEGER,
     "group"      INTEGER,
     state        INTEGER                           NOT NULL DEFAULT 0,
-    last_message VARCHAR                                    DEFAULT '0',
+    last_message VARCHAR                                    DEFAULT '2000-01-01 00:00:00.000000',
     FOREIGN KEY (clas_id) REFERENCES class (id)
 );
 
