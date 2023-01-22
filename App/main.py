@@ -8,7 +8,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from exceptions import ClasException, GroupException, DateException, ParsingProcessException
 from table import Table
 from database import UserTable, ScheduleTable
-from constants import TOKEN, alt_classes, table_indexes, classes_10, classes_11, SPAM_RESTRICTION, new_table
+from constants import TOKEN, SPAM_RESTRICTION, alt_classes, db_classes
 from texts import *
 from keyboards import classes_list_keyboard
 
@@ -24,14 +24,11 @@ schedule_db = ScheduleTable()
 
 @dp.callback_query_handler(text="classes")
 async def classes(callback: types.CallbackQuery):
-    await log(callback.message.text)
-
     text = 'Список классов:\n\n'
-    for i in classes_10:
-        text += i + '\n'
-    text += '\n'
-    for i in classes_11:
-        text += i + '\n'
+    for i in range(24):
+        text += db_classes[i] + '\n'
+        if i == 11:
+            text += '\n'
     await callback.answer(text=text, show_alert=True)
 
 
@@ -124,9 +121,10 @@ async def set_group(message: types.Message):
     if not await check_signup(message.from_user.id):
         return
 
-    if user_db.get_clas(message.from_user.id) not in table_indexes:
+    if user_db.get_clas(message.from_user.id) not in db_classes:
         await set_class(message)
         return
+
     await message.answer(GET_GROUP_TEXT)
     user_db.set_state(message.from_user.id, 1)
 
@@ -206,7 +204,7 @@ async def process_messages(message: types.Message):
         clas = text.lower()
         if clas in alt_classes:
             clas = alt_classes[clas]
-        if clas in new_table:
+        if clas in db_classes:
             user_db.set_clas(id, clas)
             user_db.set_state(id, 1)
             await message.answer(GET_GROUP_TEXT)
@@ -236,8 +234,6 @@ async def process_messages(message: types.Message):
                 return
 
         clas = user_db.get_clas(id)
-        if clas in alt_classes:
-            clas = alt_classes[clas]
         group = user_db.get_group(id)
         date = None
 
@@ -264,6 +260,9 @@ async def process_messages(message: types.Message):
             await message.answer(INVALID_FORMAT_ERROR)
             await message.answer(FORMATS_TEXT, parse_mode='HTML')
             return
+
+        if clas.lower() in alt_classes:
+            clas = alt_classes[clas.lower()]
 
         try:
             if date not in await get_available_days():

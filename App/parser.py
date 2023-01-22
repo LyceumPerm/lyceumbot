@@ -1,5 +1,6 @@
 from openpyxl import load_workbook
 
+from App.constants import alt_classes
 from database import ScheduleTable
 
 
@@ -42,9 +43,8 @@ class TableParser:
                         classroom = classroom[:-2]
                     clas_to_write = str(self.sheet.cell(2, clas).value).lower()
 
-                    # '10иис2' in table
-                    if clas_to_write == '10иис2':
-                        clas_to_write = '10исс2'
+                    if clas_to_write in alt_classes:
+                        clas_to_write = alt_classes[clas_to_write]
 
                     if merged:
                         self.schedule_db.save(date, number, subject, clas_to_write, 1, classroom)

@@ -8,7 +8,7 @@ CREATE TABLE class
     name VARCHAR                           NOT NULL
 );
 
-INSERT INTO class(name) VALUES ('10б');
+INSERT INTO class(name) VALUES ('10био');
 INSERT INTO class(name) VALUES ('10геохим');
 INSERT INTO class(name) VALUES ('10исс1');
 INSERT INTO class(name) VALUES ('10исс2');
@@ -21,10 +21,10 @@ INSERT INTO class(name) VALUES ('10фил');
 INSERT INTO class(name) VALUES ('10фм');
 INSERT INTO class(name) VALUES ('10эк');
 
-INSERT INTO class(name) VALUES ('11б');
+INSERT INTO class(name) VALUES ('11био');
 INSERT INTO class(name) VALUES ('11биохим');
 INSERT INTO class(name) VALUES ('11гео');
-INSERT INTO class(name) VALUES ('11ис');
+INSERT INTO class(name) VALUES ('11исс');
 INSERT INTO class(name) VALUES ('11линг1');
 INSERT INTO class(name) VALUES ('11линг2');
 INSERT INTO class(name) VALUES ('11мат1');
