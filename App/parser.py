@@ -1,6 +1,6 @@
 from openpyxl import load_workbook
 
-from App.constants import weektable_classes, db_classes
+from constants import weektable_classes, db_classes
 from database import ScheduleTable
 
 
