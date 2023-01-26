@@ -89,9 +89,9 @@ class ScheduleTable:
         self.con = sqlite3.connect(DB_PATH)
         self.cur = self.con.cursor()
 
-    def save(self, date: str, number: int, name: str, clas_number: int, clas_profile: str, group: int, classroom: str):
-        query = 'INSERT INTO schedule (date, number, name, clas_number, clas_id, "group", classroom) VALUES (?, ?, ?, ?, (SELECT id FROM class WHERE name = ?), ?, ?);'
-        self.cur.execute(query, (date, number, name, clas_number, clas_profile, group, classroom))
+    def save(self, date: str, number: int, name: str, teacher: str, clas_number: int, clas_profile: str, group: int, classroom: str):
+        query = 'INSERT INTO schedule (date, number, name, teacher, clas_number, clas_id, "group", classroom) VALUES (?, ?, ?, ?, ?, (SELECT id FROM class WHERE name = ?), ?, ?);'
+        self.cur.execute(query, (date, number, name, teacher, clas_number, clas_profile, group, classroom))
         self.con.commit()
 
     def get(self, date: str, clas_number: int, clas_profile: str, group: int):

@@ -81,6 +81,7 @@ CREATE TABLE schedule
     date        VARCHAR                           NOT NULL,
     number      INTEGER                           NOT NULL,
     name        VARCHAR,
+    teacher     VARCHAR,
     clas_number INTEGER                           NOT NULL,
     clas_id     INTEGER                           NOT NULL,
     "group"     INTEGER                           NOT NULL,
