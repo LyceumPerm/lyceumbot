@@ -20,6 +20,7 @@ schedule_db = ScheduleTable()
 
 # CALLBACK HANDLERS
 
+# deprecated
 @dp.callback_query_handler(text="classes")
 async def classes(callback: types.CallbackQuery):
     text = 'Список классов:\n\n'
@@ -35,7 +36,7 @@ async def set_class_number(callback: types.CallbackQuery):
     id = callback.from_user.id
 
     func = get_10_class_profiles_keyboard() if callback.data == '10' else get_11_class_profiles_keyboard()
-    await bot.edit_message_text('А теперь выбери профиль класса из кнопок ниже!', id, callback.message.message_id, reply_markup=func)
+    await bot.edit_message_text(GET_CLAS_TEXT, id, callback.message.message_id, reply_markup=func)
     user_db.set_state(id, 1)
 
     user_db.set_clas_number(id, int(callback.data))
@@ -46,7 +47,7 @@ async def set_class_number(callback: types.CallbackQuery):
 async def set_class_profile(callback: types.CallbackQuery):
     id = callback.from_user.id
 
-    await bot.edit_message_text('Выбери номер группы!', id, callback.message.message_id, reply_markup=get_group_keyboard())
+    await bot.edit_message_text(GET_GROUP_TEXT, id, callback.message.message_id, reply_markup=get_group_keyboard())
     user_db.set_state(id, 2)
 
     clas_num = user_db.get_clas_number(id)
@@ -62,6 +63,7 @@ async def set_group(callback: types.CallbackQuery):
 
     user_db.set_group(id, int(callback.data))
     await callback.answer()
+    await help(callback.message)
 
 @dp.callback_query_handler()
 async def get_by_button(callback: types.CallbackQuery):
@@ -90,9 +92,9 @@ async def start(message: types.Message):
     if not user_db.user_exists(id):
         user_db.save_user(id, message.from_user.username, message.from_user.first_name, None, None, None)
         await message.answer(START_TEXT)
-        await message.answer('Для начала у' + GET_CLAS_TEXT[1:], reply_markup=get_class_number_keyboard())
+        await message.answer('Для начала у' + GET_CLAS_NUMBER_TEXT[1:], reply_markup=get_class_number_keyboard())
 
-    elif user_db.get_state(id) in [0, 1]:
+    elif user_db.get_state(id) in [0, 1, 2]:
         user_db.set_state(message.from_user.id, 0)
         await message.answer(GET_CLAS_TEXT, reply_markup=get_class_list_keyboard())
 
@@ -140,8 +142,7 @@ async def set_class(message: types.Message):
     if not await check_signup(message.from_user.id):
         return
 
-    await message.answer(GET_CLAS_TEXT, reply_markup=get_class_number_keyboard())
-    user_db.set_state(message.from_user.id, 0)
+    await message.answer(GET_CLAS_NUMBER_TEXT, reply_markup=get_class_number_keyboard())
 
 
 @dp.message_handler(commands=['setgroup'])
@@ -150,13 +151,11 @@ async def set_group(message: types.Message):
     if not await check_signup(message.from_user.id):
         return
 
-    # TODO доделать
-    # if user_db.get_clas_profile(message.from_user.id) not in db_classes:
-    #     await set_class_number(message)
-    #     return
+    if user_db.get_state(message.from_user.id) in [0, 1]:
+        await set_class()
+        return
 
-    await message.answer(GET_GROUP_TEXT)
-    user_db.set_state(message.from_user.id, 1)
+    await message.answer(GET_GROUP_TEXT, reply_markup=get_group_keyboard())
 
 
 @dp.message_handler(commands=['teacher'])
@@ -377,10 +376,10 @@ async def process_checks(id, signup=True, spam=False):
 async def check_signup(id):
     if not user_db.user_exists(id):
         return False
-    if user_db.get_state(id) in [0, 1]:
+    if user_db.get_state(id) in [0, 1, 2]:
         user_db.set_state(id, 0)
         await bot.send_message(id, SIGNUP_ERROR)
-        await bot.send_message(id, GET_CLAS_TEXT, reply_markup=get_class_number_keyboard())
+        await bot.send_message(id, GET_CLAS_NUMBER_TEXT, reply_markup=get_class_number_keyboard())
         return False
     return True
 
