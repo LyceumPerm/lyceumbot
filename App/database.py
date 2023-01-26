@@ -95,7 +95,7 @@ class ScheduleTable:
         self.con.commit()
 
     def get(self, date: str, clas_number: int, clas_profile: str, group: int):
-        clas_id = self.cur.execute('SELECT id FROM class WHERE name = ?', (clas_profile,)).fetchone()[0]
+        clas_profile = self.cur.execute('SELECT id FROM class WHERE name = ?', (clas_profile,)).fetchone()[0]
         query = 'SELECT * FROM schedule WHERE date = ? and clas_number = ? and clas_id = ? and "group" = ? ORDER BY number;'
         return self.cur.execute(query, (date, clas_number, clas_profile, group)).fetchall()
 
