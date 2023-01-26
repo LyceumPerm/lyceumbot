@@ -39,7 +39,7 @@ class TableParser:
                     subject1 = self.sheet.cell(row, clas).value
                     try:
                         teacher1 = subject1[subject1.index('(') + 1: subject1.index(')')]
-                        subject1 = subject1[:subject1.index('(')]
+                        subject1 = subject1[:subject1.index('(') - 1]
                     except:
                         teacher1 = None
 
@@ -47,7 +47,7 @@ class TableParser:
                     subject2 = self.sheet.cell(row, clas + 1).value
                     try:
                         teacher2 = subject1[subject1.index('(') + 1: subject1.index(')')]
-                        subject2 = subject2[:subject1.index('(')]
+                        subject2 = subject2[:subject1.index('(') - 1]
                     except:
                         teacher2 = None
 
