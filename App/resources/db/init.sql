@@ -8,33 +8,58 @@ CREATE TABLE class
     name VARCHAR                           NOT NULL
 );
 
-INSERT INTO class(name) VALUES ('10био');
-INSERT INTO class(name) VALUES ('10геохим');
-INSERT INTO class(name) VALUES ('10исс1');
-INSERT INTO class(name) VALUES ('10исс2');
-INSERT INTO class(name) VALUES ('10линг1');
-INSERT INTO class(name) VALUES ('10линг2');
-INSERT INTO class(name) VALUES ('10мат');
-INSERT INTO class(name) VALUES ('10матэк');
-INSERT INTO class(name) VALUES ('10мед');
-INSERT INTO class(name) VALUES ('10фил');
-INSERT INTO class(name) VALUES ('10фм');
-INSERT INTO class(name) VALUES ('10эк');
+INSERT INTO class(name)
+VALUES ('био');
+INSERT INTO class(name)
+VALUES ('геохим');
+INSERT INTO class(name)
+VALUES ('исс1');
+INSERT INTO class(name)
+VALUES ('исс2');
+INSERT INTO class(name)
+VALUES ('линг1');
+INSERT INTO class(name)
+VALUES ('линг2');
+INSERT INTO class(name)
+VALUES ('мат');
+INSERT INTO class(name)
+VALUES ('матэк');
+INSERT INTO class(name)
+VALUES ('мед');
+INSERT INTO class(name)
+VALUES ('фил');
+INSERT INTO class(name)
+VALUES ('фм');
+INSERT INTO class(name)
+VALUES ('эк');
 
-INSERT INTO class(name) VALUES ('11био');
-INSERT INTO class(name) VALUES ('11биохим');
-INSERT INTO class(name) VALUES ('11гео');
-INSERT INTO class(name) VALUES ('11исс');
-INSERT INTO class(name) VALUES ('11линг1');
-INSERT INTO class(name) VALUES ('11линг2');
-INSERT INTO class(name) VALUES ('11мат1');
-INSERT INTO class(name) VALUES ('11мат2');
-INSERT INTO class(name) VALUES ('11мед');
-INSERT INTO class(name) VALUES ('11фил');
-INSERT INTO class(name) VALUES ('11фм');
-INSERT INTO class(name) VALUES ('11эк');
+INSERT INTO class(name)
+VALUES ('био');
+INSERT INTO class(name)
+VALUES ('биохим');
+INSERT INTO class(name)
+VALUES ('гео');
+INSERT INTO class(name)
+VALUES ('исс');
+INSERT INTO class(name)
+VALUES ('линг1');
+INSERT INTO class(name)
+VALUES ('линг2');
+INSERT INTO class(name)
+VALUES ('мат1');
+INSERT INTO class(name)
+VALUES ('мат2');
+INSERT INTO class(name)
+VALUES ('мед');
+INSERT INTO class(name)
+VALUES ('фил');
+INSERT INTO class(name)
+VALUES ('фм');
+INSERT INTO class(name)
+VALUES ('эк');
 
-INSERT INTO class(name) VALUES ('none');
+INSERT INTO class(name)
+VALUES ('none');
 
 CREATE TABLE user
 (
@@ -42,6 +67,7 @@ CREATE TABLE user
     telegram_id  INTEGER UNIQUE                    NOT NULL,
     username     VARCHAR,
     name         VARCHAR                           NOT NULL,
+    clas_number  INTEGER,
     clas_id      INTEGER,
     "group"      INTEGER,
     state        INTEGER                           NOT NULL DEFAULT 0,
@@ -51,12 +77,13 @@ CREATE TABLE user
 
 CREATE TABLE schedule
 (
-    id        INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    date      VARCHAR                           NOT NULL,
-    number    INTEGER                           NOT NULL,
-    name      VARCHAR,
-    clas_id   INTEGER                           NOT NULL,
-    "group"   INTEGER                           NOT NULL,
-    classroom VARCHAR,
+    id          INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    date        VARCHAR                           NOT NULL,
+    number      INTEGER                           NOT NULL,
+    name        VARCHAR,
+    clas_number INTEGER                           NOT NULL,
+    clas_id     INTEGER                           NOT NULL,
+    "group"     INTEGER                           NOT NULL,
+    classroom   VARCHAR,
     FOREIGN KEY (clas_id) REFERENCES class (id)
 );

@@ -8,9 +8,9 @@ class UserTable:
         self.con = sqlite3.connect(DB_PATH)
         self.cur = self.con.cursor()
 
-    def save_user(self, telegram_id, username, name, clas, group):
-        query = 'INSERT INTO user (telegram_id, username, name, clas_id, "group")  VALUES (?, ?, ?, (SELECT id FROM class WHERE name = ?), ?);'
-        self.cur.execute(query, (telegram_id, username, name, clas, group))
+    def save_user(self, telegram_id, username, name, clas_number, clas_profile, group):
+        query = 'INSERT INTO user (telegram_id, username, name, clas_number, clas_id, "group")  VALUES (?, ?, ?, ?, (SELECT id FROM class WHERE name = ?), ?);'
+        self.cur.execute(query, (telegram_id, username, name, clas_number, clas_profile, group))
         self.con.commit()
 
     def get_user(self, telegram_id):
@@ -29,9 +29,9 @@ class UserTable:
         self.cur.execute(query, (telegram_id,))
         self.con.commit()
 
-    def update_user(self, id, telegram_id, username, name, clas, group):
-        query = 'UPDATE user SET telegram_id = ?, username = ?, name = ?, clas_id = (SELECT id from class WHERE name = ?), "group" = ? WHERE id = ?;'
-        self.cur.execute(query, (telegram_id, username, name, clas, group, id))
+    def update_user(self, id, telegram_id, username, name, clas_number, clas_profile, group):
+        query = 'UPDATE user SET telegram_id = ?, username = ?, name = ?, clas_number = ?, clas_id = (SELECT id from class WHERE name = ?), "group" = ? WHERE id = ?;'
+        self.cur.execute(query, (telegram_id, username, name, clas_number, clas_profile, group, id))
         self.con.commit()
 
     def get_state(self, telegram_id):
@@ -44,15 +44,24 @@ class UserTable:
         self.cur.execute(query, (state, telegram_id))
         self.con.commit()
 
-    def get_clas(self, telegram_id):
-        query = 'SELECT name FROM class WHERE id = (SELECT clas_id FROM user WHERE telegram_id = ?)'
-        # query = 'SELECT clas FROM user WHERE telegram_id = ?;'
+    def get_clas_number(self, telegram_id):
+        query = 'SELECT clas_number FROM user WHERE telegram_id = ?;'
         result = self.cur.execute(query, (telegram_id,)).fetchone()
         return result[0]
 
-    def set_clas(self, telegram_id, clas):
+    def set_clas_number(self, telegram_id, clas_number):
+        query = 'UPDATE user SET clas_number = ? WHERE telegram_id = ?;'
+        self.cur.execute(query, (clas_number, telegram_id))
+        self.con.commit()
+
+    def get_clas_profile(self, telegram_id):
+        query = 'SELECT name FROM class WHERE id = (SELECT clas_id FROM user WHERE telegram_id = ?);'
+        result = self.cur.execute(query, (telegram_id,)).fetchone()
+        return result[0]
+
+    def set_clas_profile(self, telegram_id, clas_profile):
         query = 'UPDATE user SET clas_id = (SELECT id FROM class WHERE name = ?) WHERE telegram_id = ?;'
-        self.cur.execute(query, (clas, telegram_id))
+        self.cur.execute(query, (clas_profile, telegram_id))
         self.con.commit()
 
     def get_group(self, telegram_id):
@@ -80,15 +89,15 @@ class ScheduleTable:
         self.con = sqlite3.connect(DB_PATH)
         self.cur = self.con.cursor()
 
-    def save(self, date: str, number: int, name: str, clas: str, group: int, classroom: str):
-        query = 'INSERT INTO schedule (date, number, name, clas_id, "group", classroom) VALUES (?, ?, ?, (SELECT id FROM class WHERE name = ?), ?, ?);'
-        self.cur.execute(query, (date, number, name, clas, group, classroom))
+    def save(self, date: str, number: int, name: str, clas_number: int, clas_profile: str, group: int, classroom: str):
+        query = 'INSERT INTO schedule (date, number, name, clas_number, clas_id, "group", classroom) VALUES (?, ?, ?, ?, (SELECT id FROM class WHERE name = ?), ?, ?);'
+        self.cur.execute(query, (date, number, name, clas_number, clas_profile, group, classroom))
         self.con.commit()
 
-    def get(self, date: str, clas: str, group: int):
-        clas_id = self.cur.execute('SELECT id FROM class WHERE name = ?', (clas,)).fetchone()[0]
-        query = 'SELECT * FROM schedule WHERE date = ? and clas_id = ? and "group" = ? ORDER BY number;'
-        return self.cur.execute(query, (date, clas_id, group)).fetchall()
+    def get(self, date: str, clas_number: int, clas_profile: str, group: int):
+        clas_id = self.cur.execute('SELECT id FROM class WHERE name = ?', (clas_profile,)).fetchone()[0]
+        query = 'SELECT * FROM schedule WHERE date = ? and clas_number = ? and clas_id = ? and "group" = ? ORDER BY number;'
+        return self.cur.execute(query, (date, clas_number, clas_profile, group)).fetchall()
 
     def clear(self):
         query = 'DELETE FROM schedule;'
