@@ -83,6 +83,15 @@ class UserTable:
         self.cur.execute(query, (last_message, telegram_id))
         self.con.commit()
 
+    def get_teacher(self, telegram_id):
+        query = 'SELECT name FROM teacher WHERE id = (SELECT teacher_id FROM user WHERE telegram_id = ?);'
+        return self.cur.execute(query, (telegram_id,)).fetchone()[0]
+
+    def set_teacher(self, telegram_id, teacher):
+        query = 'UPDATE user SET teacher_id = (SELECT id FROM teacher WHERE name = ?) WHERE telegram_id = ?;'
+        self.cur.execute(query, (teacher, telegram_id))
+        self.con.commit()
+
 
 class ScheduleTable:
     def __init__(self):
@@ -90,7 +99,7 @@ class ScheduleTable:
         self.cur = self.con.cursor()
 
     def save(self, date: str, number: int, name: str, teacher: str, clas_number: int, clas_profile: str, group: int, classroom: str):
-        query = 'INSERT INTO schedule (date, number, name, teacher, clas_number, profile_id, "group", classroom) VALUES (?, ?, ?, ?, ?, (SELECT id FROM profile WHERE name = ?), ?, ?);'
+        query = 'INSERT INTO schedule (date, number, name, teacher_id, clas_number, profile_id, "group", classroom) VALUES (?, ?, ?, (SELECT id FROM teacher WHERE name = ?), ?, (SELECT id FROM profile WHERE name = ?), ?, ?);'
         self.cur.execute(query, (date, number, name, teacher, clas_number, clas_profile, group, classroom))
         self.con.commit()
 
@@ -100,10 +109,16 @@ class ScheduleTable:
         return self.cur.execute(query, (date, clas_number, clas_profile, group)).fetchall()
 
     def get_teacher(self, date: str, teacher: str):
-        query = 'SELECT * FROM schedule WHERE date = ? and teacher = ? ORDER BY number;'
+        query = 'SELECT * FROM schedule WHERE date = ? and teacher_id = (SELECT id FROM teacher WHERE name = ?) ORDER BY number;'
         return self.cur.execute(query, (date, teacher)).fetchall()
 
     def clear(self):
         query = 'DELETE FROM schedule;'
         self.cur.execute(query)
         self.con.commit()
+
+
+if __name__ == '__main__':
+    user_db = UserTable()
+    user_db.set_teacher(1158357107, 'Коровина К.С.')
+    print(user_db.get_teacher(1158357107))
