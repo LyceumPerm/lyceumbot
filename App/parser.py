@@ -25,17 +25,12 @@ class TableParser:
                 date = days[self.sheet.cell(day, 1).value.lower()]
                 for row in range(day, day + 5):
 
-                    # fixes hidden row bug
-                    # TODO delete
-                    if row == 28:
-                        row = 29
-
                     merged = False
                     for i in str(merged_cells).split():
                         if str(i).startswith(self.sheet.cell(row, clas).coordinate):
                             merged = True
 
-                    number = row - day + 1 if row != 29 else 5  # TODO delete part 'if'
+                    number = row - day + 1
                     subject1 = self.sheet.cell(row, clas).value
                     try:
                         teacher1 = subject1[subject1.index('(') + 1: subject1.index(')')]

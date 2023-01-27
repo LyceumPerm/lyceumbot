@@ -1,6 +1,12 @@
 from openpyxl import load_workbook
-from constants import table_indexes
+# from constants import table_indexes
 from exceptions import ClasException, GroupException
+
+table_indexes = {'10б': 'B2', '10геохим': 'E2', '10исс1': 'H2', '10исс2': 'K2', '10линг1': 'N2', '10линг2': 'B8',
+                 '10мат': 'E8', '10матэк': 'H8', '10мед': 'K8', '10фил': 'N8', '10фм': 'B14', '10эк': 'E14',
+                 '11б': 'H14', '11бх': 'K14', '11гео': 'N14', '11исс': 'B20', '11линг1': 'E20', '11линг2': 'H20',
+                 '11м1': 'K20', '11м2': 'N20', '11мед': 'B26', '11фил': 'E26', '11фм': 'H26', '11эк': 'K26'}
+
 
 # old parser
 class Table:

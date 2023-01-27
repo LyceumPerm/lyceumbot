@@ -4,9 +4,8 @@ import datetime
 from aiogram import Bot, Dispatcher, executor, types
 
 from exceptions import ClasException, GroupException, DateException, ParsingProcessException
-from table import Table
 from database import UserTable, ScheduleTable
-from constants import TOKEN, SPAM_RESTRICTION, alt_classes, db_classes
+from constants import TOKEN, SPAM_RESTRICTION, db_classes, alt_profiles
 from texts import *
 from keyboards import *
 
@@ -20,12 +19,11 @@ schedule_db = ScheduleTable()
 
 # CALLBACK HANDLERS
 
-# deprecated
 @dp.callback_query_handler(text="classes")
 async def classes(callback: types.CallbackQuery):
     text = 'Список классов:\n\n'
     for i in range(24):
-        text += db_classes[i] + '\n'
+        text += db_classes_old[i] + '\n'
         if i == 11:
             text += '\n'
     await callback.answer(text=text, show_alert=True)
@@ -50,7 +48,7 @@ async def set_class_profile(callback: types.CallbackQuery):
     await bot.edit_message_text(GET_GROUP_TEXT, id, callback.message.message_id, reply_markup=get_group_keyboard())
     user_db.set_state(id, 2)
 
-    clas_num = user_db.get_clas_number(id)
+    user_db.set_clas_number(id, int(callback.data[:2]))
     user_db.set_clas_profile(id, callback.data[2:])
     await callback.answer()
 
@@ -64,6 +62,7 @@ async def set_group(callback: types.CallbackQuery):
     user_db.set_group(id, int(callback.data))
     await callback.answer()
     await help(callback.message)
+
 
 @dp.callback_query_handler()
 async def get_by_button(callback: types.CallbackQuery):
@@ -81,6 +80,13 @@ async def get_by_button(callback: types.CallbackQuery):
 
 
 # COMMAND HANDLERS
+
+
+@dp.message_handler(commands=['me'])
+async def me(message: types.Message):
+    id = message.from_user.id
+    await message.answer(
+        f'{user_db.get_clas_number(id), user_db.get_clas_profile(id), user_db.get_group(id), user_db.get_state(id)}')
 
 
 @dp.message_handler(commands=['start'])
@@ -119,7 +125,6 @@ async def get(message: types.Message):
         await process_messages(message)
         return
 
-
     await message.answer('Введите дату или выберите из кнопок ниже:', reply_markup=get_days_keyboard())
 
 
@@ -129,9 +134,8 @@ async def list(message: types.Message):
     if not await check_signup(message.from_user.id):
         return
 
-    days_list = await get_available_days()
     text = 'Список доступных дней:\n\n'
-    for i in days_list:
+    for i in available_days:
         text += i + ' '
     await message.answer(text)
 
@@ -227,33 +231,17 @@ async def process_messages(message: types.Message):
         await message.answer(SWW_ERROR)
         return
 
-    if state == 0:
+    if state in [0, 1]:
         # class processing
-
-        clas = text.lower()
-        if clas in alt_classes:
-            clas = alt_classes[clas]
-        if clas in db_classes:
-            user_db.set_clas(id, clas)
-            user_db.set_state(id, 1)
-            await message.answer(GET_GROUP_TEXT)
-        else:
-            await message.answer(INVALID_CLASS_ERROR)
-            await message.answer(GET_CLAS_TEXT, reply_markup=get_class_list_keyboard())
-
-    elif state == 1:
-        # group processing
-        if text in ('1', '2'):
-            user_db.set_group(id, text)
-            user_db.set_state(id, 2)
-            await message.answer(TEXT_SUCCESS)
-            await help(message)
-
-        else:
-            await message.answer(INVALID_GROUP_ERROR)
-            await message.answer(GET_GROUP_TEXT)
+        await message.answer(SELECT_GROUP_ERROR)
+        await message.answer(GET_GROUP_TEXT, reply_markup=get_group_keyboard())
 
     elif state == 2:
+        # group processing
+        await message.answer(INVALID_GROUP_ERROR)
+        await message.answer(GET_GROUP_TEXT)
+
+    elif state == 3:
         # date processing
         if not await process_checks(id, signup=True, spam=False):
             return
@@ -265,7 +253,6 @@ async def process_messages(message: types.Message):
         clas_number = user_db.get_clas_number(id)
         clas_profile = user_db.get_clas_profile(id)
         group = user_db.get_group(id)
-        date = None
 
         if text.startswith('/get'):
             if '.' in text:
@@ -285,19 +272,19 @@ async def process_messages(message: types.Message):
         elif re.fullmatch(r'\d\d \d\d .* .*', text):
             elements = text.split()
             date = f'{elements[0]}.{elements[1]}'
-            clas_number = elements[1][:2]
-            clas_profile = elements[1][2:]
+            clas_number = elements[2][:2]
+            clas_profile = elements[2][2:]
             group = int(elements[3])
         else:
             await message.answer(INVALID_FORMAT_ERROR)
             await message.answer(FORMATS_TEXT, parse_mode='HTML')
             return
 
-        # if clas.lower() in alt_classes:
-        #     clas = alt_classes[clas.lower()] TODO fix
+        if clas_profile in alt_profiles:
+            clas_profile = alt_profiles[clas_profile]
 
         try:
-            if date not in await get_available_days():
+            if date not in available_days:
                 raise DateException()
 
             schedule = await get_schedule(date, clas_number, clas_profile, group)
@@ -321,29 +308,10 @@ async def log(message):
     message_logger.flush()
 
 
-async def get_available_days():
-    with open('resources/schedule/available.txt', 'r') as file:
-        result = file.read().split('\n')
-    return result
-
-
-# deprecated
-async def get_schedule_old(date, clas, group):
-    table = Table(date)
-    schedule = table.get_schedule(date, clas, group)
-    classrooms = table.get_classrooms(date, clas, group)
-
-    text = f'{clas} • группа {group} • {date}\n\n'
-    for i in range(len(schedule)):
-        if schedule[i] is not None:
-            text += f'{i + 1}. {schedule[i]}    [{classrooms[i] if classrooms[i] != "None" else " — "}]\n'
-        else:
-            text += f'{i + 1}. ✖ \n'
-
-    return text
-
-
 async def get_schedule(date: str, clas_number: int, clas_profile: str, group: int) -> str:
+    if clas_profile not in db_classes:
+        raise ClasException
+
     schedule = schedule_db.get(date, clas_number, clas_profile, group)
     if len(schedule) != 5:
         raise ParsingProcessException
