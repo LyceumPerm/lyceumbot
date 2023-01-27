@@ -68,7 +68,7 @@ async def set_group(callback: types.CallbackQuery):
 @dp.callback_query_handler()
 async def get_by_button(callback: types.CallbackQuery):
     tg_id = callback.from_user.id
-    if not await process_checks(tg_id, signup=True, spam=True):
+    if not await process_checks(tg_id, spam=True):
         await callback.answer(show_alert=False)
         return
     try:
@@ -125,7 +125,7 @@ async def get(message: types.Message):
 @dp.message_handler(commands=['list'])
 async def list(message: types.Message):
     await log(message)
-    if not await check_signup(message.from_user.id):
+    if not await process_checks(message.from_user.id):
         return
 
     answer_text = 'Список доступных дней:\n\n'
@@ -137,7 +137,7 @@ async def list(message: types.Message):
 @dp.message_handler(commands=['setclass'])
 async def set_class(message: types.Message):
     await log(message)
-    if not await check_signup(message.from_user.id):
+    if not await process_checks(message.from_user.id):
         return
 
     await message.answer(texts.GET_CLASS_NUMBER, reply_markup=keyboards.select_class_num())
@@ -146,7 +146,7 @@ async def set_class(message: types.Message):
 @dp.message_handler(commands=['setgroup'])
 async def set_group(message: types.Message):
     await log(message)
-    if not await check_signup(message.from_user.id):
+    if not await process_checks(message.from_user.id):
         return
 
     if user_db.get_state(message.from_user.id) in [0, 1]:
@@ -159,8 +159,11 @@ async def set_group(message: types.Message):
 @dp.message_handler(commands=['teacher'])
 async def teacher(message: types.Message):
     await log(message)
-    if not await check_signup(message.from_user.id):
+    if not await process_checks(message.from_user.id):
         return
+
+    await message.answer(texts.WIP)
+    return
 
     elements = message.text.split()
     date = elements[1]
@@ -189,7 +192,7 @@ async def teacher(message: types.Message):
 @dp.message_handler(commands=['settings'])
 async def settings(message: types.Message):
     await log(message)
-    if not await check_signup(message.from_user.id):
+    if not await process_checks(message.from_user.id):
         return
 
     await message.answer(texts.WIP)
@@ -198,7 +201,7 @@ async def settings(message: types.Message):
 @dp.message_handler(commands=['bells'])
 async def bells(message: types.Message):
     await log(message)
-    if not await check_signup(message.from_user.id):
+    if not await process_checks(message.from_user.id):
         return
 
     with open('resources/bells.jpg', 'rb') as photo:
@@ -208,7 +211,7 @@ async def bells(message: types.Message):
 @dp.message_handler(commands=['about'])
 async def about(message: types.Message):
     await log(message)
-    if not await check_signup(message.from_user.id):
+    if not await process_checks(message.from_user.id):
         return
 
     await message.answer(texts.ABOUT, parse_mode='HTML', disable_web_page_preview=True)
@@ -217,7 +220,7 @@ async def about(message: types.Message):
 @dp.message_handler(commands=['formats'])
 async def formats(message: types.Message):
     await log(message)
-    if not await check_signup(message.from_user.id):
+    if not await process_checks(message.from_user.id):
         return
 
     await message.answer(texts.FORMATS, parse_mode='HTML')
@@ -351,7 +354,10 @@ async def get_schedule(date: str, clas_number: int, clas_profile: str, group: in
 
 
 # если не прошли проверки - возвращает False
-async def process_checks(id, signup=True, spam=False):
+async def process_checks(id, signup=True, spam=False, user_exists=True):
+    if user_exists and not user_db.user_exists(id):
+            await bot.send_message(id, texts.SWW_ERROR)
+            return
     if signup and spam:
         return await check_signup(id) and await check_spam(id)
     if signup:
