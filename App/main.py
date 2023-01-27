@@ -5,9 +5,9 @@ from aiogram import Bot, Dispatcher, executor, types
 
 from exceptions import ClasException, GroupException, DateException, ParsingProcessException
 from database import UserTable, ScheduleTable
-from constants import TOKEN, SPAM_RESTRICTION, db_classes, alt_profiles
-from texts import *
-from keyboards import *
+from constants import TOKEN, SPAM_RESTRICTION, CLASSES, PROFILES, alt_profiles, available_days
+import texts
+import keyboards
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher(bot)
@@ -23,7 +23,7 @@ schedule_db = ScheduleTable()
 async def classes(callback: types.CallbackQuery):
     text = 'Список классов:\n\n'
     for i in range(24):
-        text += db_classes_old[i] + '\n'
+        text += CLASSES[i] + '\n'
         if i == 11:
             text += '\n'
     await callback.answer(text=text, show_alert=True)
@@ -31,88 +31,82 @@ async def classes(callback: types.CallbackQuery):
 
 @dp.callback_query_handler(text=['10', '11'])
 async def set_class_number(callback: types.CallbackQuery):
-    id = callback.from_user.id
+    tg_id = callback.from_user.id
 
-    func = get_10_class_profiles_keyboard() if callback.data == '10' else get_11_class_profiles_keyboard()
-    await bot.edit_message_text(GET_CLAS_TEXT, id, callback.message.message_id, reply_markup=func)
-    user_db.set_state(id, 1)
+    func = keyboards.select_10_profile() if callback.data == '10' else keyboards.select_11_profile()
+    await bot.edit_message_text(texts.GET_CLASS, tg_id, callback.message.message_id, reply_markup=func)
+    user_db.set_state(tg_id, 1)
 
-    user_db.set_clas_number(id, int(callback.data))
+    user_db.set_clas_number(tg_id, int(callback.data))
     await callback.answer()
 
 
-@dp.callback_query_handler(text=db_classes_old)
+@dp.callback_query_handler(text=CLASSES)
 async def set_class_profile(callback: types.CallbackQuery):
-    id = callback.from_user.id
+    tg_id = callback.from_user.id
 
-    await bot.edit_message_text(GET_GROUP_TEXT, id, callback.message.message_id, reply_markup=get_group_keyboard())
-    user_db.set_state(id, 2)
+    await bot.edit_message_text(texts.GET_GROUP, tg_id, callback.message.message_id,
+                                reply_markup=keyboards.select_group())
+    user_db.set_state(tg_id, 2)
 
-    user_db.set_clas_number(id, int(callback.data[:2]))
-    user_db.set_clas_profile(id, callback.data[2:])
+    user_db.set_clas_number(tg_id, int(callback.data[:2]))
+    user_db.set_clas_profile(tg_id, callback.data[2:])
     await callback.answer()
 
 
 @dp.callback_query_handler(text=['1', '2'])
 async def set_group(callback: types.CallbackQuery):
-    id = callback.from_user.id
-    await bot.edit_message_text(TEXT_SUCCESS, id, callback.message.message_id)
-    user_db.set_state(id, 3)
+    tg_id = callback.from_user.id
+    await bot.edit_message_text(texts.SUCCESS, tg_id, callback.message.message_id)
+    user_db.set_state(tg_id, 3)
 
-    user_db.set_group(id, int(callback.data))
+    user_db.set_group(tg_id, int(callback.data))
     await callback.answer()
     await help(callback.message)
 
 
 @dp.callback_query_handler()
 async def get_by_button(callback: types.CallbackQuery):
-    id = callback.from_user.id
-    if not await process_checks(id, signup=True, spam=True):
+    tg_id = callback.from_user.id
+    if not await process_checks(tg_id, signup=True, spam=True):
         await callback.answer(show_alert=False)
         return
     try:
         await callback.message.answer(
-            await get_schedule(callback.data, user_db.get_clas_number(id), user_db.get_clas_profile(id),
-                               user_db.get_group(id)))
+            await get_schedule(callback.data, user_db.get_clas_number(tg_id), user_db.get_clas_profile(tg_id),
+                               user_db.get_group(tg_id)))
     except ParsingProcessException:
-        await callback.message.answer(TABLE_UPDATING_ERROR)
+        await callback.message.answer(texts.TABLE_UPDATING_ERROR)
     await callback.answer(show_alert=False)
 
 
 # COMMAND HANDLERS
 
-
-@dp.message_handler(commands=['me'])
-async def me(message: types.Message):
-    id = message.from_user.id
-    await message.answer(
-        f'{user_db.get_clas_number(id), user_db.get_clas_profile(id), user_db.get_group(id), user_db.get_state(id)}')
-
-
 @dp.message_handler(commands=['start'])
 async def start(message: types.Message):
     await log(message)
 
-    id = message.from_user.id
+    tg_id = message.from_user.id
 
-    if not user_db.user_exists(id):
-        user_db.save_user(id, message.from_user.username, message.from_user.first_name, None, None, None)
-        await message.answer(START_TEXT)
-        await message.answer('Для начала у' + GET_CLAS_NUMBER_TEXT[1:], reply_markup=get_class_number_keyboard())
+    if not user_db.user_exists(tg_id):
+        user_db.save_user(tg_id, message.from_user.username, message.from_user.first_name, None, None, None)
+        await message.answer(texts.START)
+        await message.answer('Для начала у' + texts.GET_CLASS_NUMBER[1:],
+                             reply_markup=keyboards.select_class_num())
 
-    elif user_db.get_state(id) in [0, 1, 2]:
+    elif user_db.get_state(tg_id) in [0, 1, 2]:
         user_db.set_state(message.from_user.id, 0)
-        await message.answer(GET_CLAS_TEXT, reply_markup=get_class_list_keyboard())
+        await message.answer(texts.GET_CLASS, reply_markup=keyboards.list_classes())
 
     else:
-        await message.answer(f'{START_TEXT}\n\n{MORE_INFO_TEXT}')
+        await message.answer(f'{texts.START}\n\n{texts.MORE_INFO}')
 
 
 @dp.message_handler(commands=['help'])
 async def help(message: types.Message):
     await log(message)
 
-    await message.answer(HELP_TEXT, parse_mode='HTML')
+    await message.answer(texts.HELP, parse_mode='HTML')
 
 
 @dp.message_handler(commands=['get'])
@@ -125,7 +119,7 @@ async def get(message: types.Message):
         await process_messages(message)
         return
 
-    await message.answer('Введите дату или выберите из кнопок ниже:', reply_markup=get_days_keyboard())
+    await message.answer('Введите дату или выберите из кнопок ниже:', reply_markup=keyboards.select_day())
 
 
 @dp.message_handler(commands=['list'])
@@ -134,10 +128,10 @@ async def list(message: types.Message):
     if not await check_signup(message.from_user.id):
         return
 
-    text = 'Список доступных дней:\n\n'
+    answer_text = 'Список доступных дней:\n\n'
     for i in available_days:
-        text += i + ' '
-    await message.answer(text)
+        answer_text += i + ' '
+    await message.answer(answer_text)
 
 
 @dp.message_handler(commands=['setclass'])
@@ -146,7 +140,7 @@ async def set_class(message: types.Message):
     if not await check_signup(message.from_user.id):
         return
 
-    await message.answer(GET_CLAS_NUMBER_TEXT, reply_markup=get_class_number_keyboard())
+    await message.answer(texts.GET_CLASS_NUMBER, reply_markup=keyboards.select_class_num())
 
 
 @dp.message_handler(commands=['setgroup'])
@@ -159,7 +153,7 @@ async def set_group(message: types.Message):
         await set_class()
         return
 
-    await message.answer(GET_GROUP_TEXT, reply_markup=get_group_keyboard())
+    await message.answer(texts.GET_GROUP, reply_markup=keyboards.select_group())
 
 
 @dp.message_handler(commands=['teacher'])
@@ -168,7 +162,7 @@ async def teacher(message: types.Message):
     if not await check_signup(message.from_user.id):
         return
 
-    await message.answer(TEXT_WIP)
+    await message.answer(texts.WIP)
 
 
 @dp.message_handler(commands=['settings'])
@@ -177,7 +171,7 @@ async def settings(message: types.Message):
     if not await check_signup(message.from_user.id):
         return
 
-    await message.answer(TEXT_WIP)
+    await message.answer(texts.WIP)
 
 
 @dp.message_handler(commands=['bells'])
@@ -196,7 +190,7 @@ async def about(message: types.Message):
     if not await check_signup(message.from_user.id):
         return
 
-    await message.answer(ABOUT_TEXT, parse_mode='HTML', disable_web_page_preview=True)
+    await message.answer(texts.ABOUT, parse_mode='HTML', disable_web_page_preview=True)
 
 
 @dp.message_handler(commands=['formats'])
@@ -205,7 +199,7 @@ async def formats(message: types.Message):
     if not await check_signup(message.from_user.id):
         return
 
-    await message.answer(FORMATS_TEXT, parse_mode='HTML')
+    await message.answer(texts.FORMATS, parse_mode='HTML')
 
 
 @dp.message_handler(commands=['delete'])
@@ -214,7 +208,7 @@ async def delete(message: types.Message):
     await log(message)
 
     user_db.delete_user(message.from_user.id)
-    await message.answer(DELETE_TEXT, parse_mode='HTML')
+    await message.answer(texts.DELETE, parse_mode='HTML')
 
 
 # MESSAGES HANDLER
@@ -223,61 +217,63 @@ async def delete(message: types.Message):
 async def process_messages(message: types.Message):
     await log(message)
 
-    id = message.from_user.id
-    text = message.text
+    tg_id = message.from_user.id
+    message_text = message.text
     try:
-        state = user_db.get_state(id)
+        state = user_db.get_state(tg_id)
     except TypeError:
-        await message.answer(SWW_ERROR)
+        await message.answer(texts.SWW_ERROR)
         return
 
     if state in [0, 1]:
         # class processing
-        await message.answer(SELECT_GROUP_ERROR)
-        await message.answer(GET_GROUP_TEXT, reply_markup=get_group_keyboard())
+        await message.answer(texts.SELECT_GROUP_ERROR)
+        await message.answer(texts.GET_GROUP, reply_markup=keyboards.select_group())
 
     elif state == 2:
         # group processing
-        await message.answer(INVALID_GROUP_ERROR)
-        await message.answer(GET_GROUP_TEXT)
+        await message.answer(texts.INVALID_GROUP_ERROR)
+        await message.answer(texts.GET_GROUP)
 
     elif state == 3:
         # date processing
-        if not await process_checks(id, signup=True, spam=False):
+        if not await process_checks(tg_id, signup=True, spam=False):
             return
 
-        if not text.startswith('/get'):
-            if not await process_checks(id, signup=False, spam=True):
+        if not message_text.startswith('/get'):
+            if not await process_checks(tg_id, signup=False, spam=True):
                 return
 
-        clas_number = user_db.get_clas_number(id)
-        clas_profile = user_db.get_clas_profile(id)
-        group = user_db.get_group(id)
+        clas_number = user_db.get_clas_number(tg_id)
+        clas_profile = user_db.get_clas_profile(tg_id)
+        group = user_db.get_group(tg_id)
 
-        if text.startswith('/get'):
-            if '.' in text:
-                date = text.split(' ')[1]
+        if message_text.startswith('/get'):
+            if '.' in message_text:
+                date = message_text.split(' ')[1]
             else:
-                date = text.split()[1] + '.' + text.split()[2]
-        elif re.fullmatch(r'\d\d([. ])\d\d', text):
-            if ' ' in text:
-                text = '.'.join(text.split())
-            date = text
-        elif re.fullmatch(r'\d\d\.\d\d .* .*', text):
-            elements = text.split()
+                date = message_text.split()[1] + '.' + message_text.split()[2]
+
+        elif re.fullmatch(r'\d\d([. ])\d\d', message_text):
+            date = '.'.join(message_text.split()) if ' ' in message_text else message_text
+
+        elif re.fullmatch(r'\d\d\.\d\d .* .*', message_text):
+            elements = message_text.split()
             date = elements[0]
             clas_number = elements[1][:2]
             clas_profile = elements[1][2:]
             group = int(elements[2])
-        elif re.fullmatch(r'\d\d \d\d .* .*', text):
-            elements = text.split()
+
+        elif re.fullmatch(r'\d\d \d\d .* .*', message_text):
+            elements = message_text.split()
             date = f'{elements[0]}.{elements[1]}'
             clas_number = elements[2][:2]
             clas_profile = elements[2][2:]
             group = int(elements[3])
+
         else:
-            await message.answer(INVALID_FORMAT_ERROR)
-            await message.answer(FORMATS_TEXT, parse_mode='HTML')
+            await message.answer(message_text.INVALID_FORMAT_ERROR)
+            await message.answer(message_text.FORMATS, parse_mode='HTML')
             return
 
         if clas_profile in alt_profiles:
@@ -290,15 +286,15 @@ async def process_messages(message: types.Message):
             schedule = await get_schedule(date, clas_number, clas_profile, group)
             await message.answer(schedule)
         except DateException:
-            await message.answer(NO_SCHEDULE_ERROR)
+            await message.answer(texts.NO_SCHEDULE_ERROR)
         except ClasException:
-            await message.answer(INVALID_CLASS_ERROR, reply_markup=get_class_list_keyboard())
+            await message.answer(texts.INVALID_CLASS_ERROR, reply_markup=keyboards.list_classes())
         except GroupException:
-            await message.answer(INVALID_GROUP_ERROR)
+            await message.answer(texts.INVALID_GROUP_ERROR)
         except ParsingProcessException:
-            await message.answer(TABLE_UPDATING_ERROR)
+            await message.answer(texts.TABLE_UPDATING_ERROR)
     else:
-        await message.answer(SWW_ERROR)
+        await message.answer(texts.SWW_ERROR)
 
 
 # UTIL FUNCTIONS
@@ -309,25 +305,25 @@ async def log(message):
 
 
 async def get_schedule(date: str, clas_number: int, clas_profile: str, group: int) -> str:
-    if clas_profile not in db_classes:
+    if clas_profile not in PROFILES:
         raise ClasException
 
     schedule = schedule_db.get(date, clas_number, clas_profile, group)
     if len(schedule) != 5:
         raise ParsingProcessException
 
-    text = f'{str(clas_number) + clas_profile} • группа {group} • {date}\n\n'
+    result_text = f'{str(clas_number) + clas_profile} • группа {group} • {date}\n\n'
 
     for i in range(5):
         if schedule[i][3] is not None:
             classroom = schedule[i][8]
             teacher = schedule[i][4]
-            text += f'{schedule[i][2]}. {schedule[i][3]}{" (" + teacher + ")" if teacher else ""}   [{classroom if classroom != "None" else " — "}]\n'
+            result_text += f'{schedule[i][2]}. {schedule[i][3]}{" (" + teacher + ")" if teacher else ""}   [{classroom if classroom != "None" else " — "}]\n'
         else:
             if schedule[i][2] != 5:
-                text += f'{i + 1}. ✖ \n'
+                result_text += f'{i + 1}. ✖ \n'
 
-    return text
+    return result_text
 
 
 # если не прошли проверки - возвращает False
@@ -346,8 +342,8 @@ async def check_signup(id):
         return False
     if user_db.get_state(id) in [0, 1, 2]:
         user_db.set_state(id, 0)
-        await bot.send_message(id, SIGNUP_ERROR)
-        await bot.send_message(id, GET_CLAS_NUMBER_TEXT, reply_markup=get_class_number_keyboard())
+        await bot.send_message(id, texts.SIGNUP_ERROR)
+        await bot.send_message(id, texts.GET_CLASS_NUMBER, reply_markup=keyboards.select_class_num())
         return False
     return True
 
@@ -357,7 +353,7 @@ async def check_spam(id):
     last_message = datetime.datetime.strptime(user_db.get_lastmessage(id), '%Y-%m-%d %H:%M:%S.%f')
 
     if abs((last_message - now).total_seconds()) < SPAM_RESTRICTION:
-        await bot.send_message(id, SPAM_ERROR)
+        await bot.send_message(id, texts.SPAM_ERROR)
         return False
 
     user_db.set_lastmessage(id, now)
