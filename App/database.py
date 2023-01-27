@@ -99,6 +99,10 @@ class ScheduleTable:
         query = 'SELECT * FROM schedule WHERE date = ? and clas_number = ? and profile_id = ? and "group" = ? ORDER BY number;'
         return self.cur.execute(query, (date, clas_number, clas_profile, group)).fetchall()
 
+    def get_teacher(self, date: str, teacher: str):
+        query = 'SELECT * FROM schedule WHERE date = ? and teacher = ? ORDER BY number;'
+        return self.cur.execute(query, (date, teacher)).fetchall()
+
     def clear(self):
         query = 'DELETE FROM schedule;'
         self.cur.execute(query)

@@ -5,7 +5,7 @@ from aiogram import Bot, Dispatcher, executor, types
 
 from exceptions import ClasException, GroupException, DateException, ParsingProcessException
 from database import UserTable, ScheduleTable
-from constants import TOKEN, SPAM_RESTRICTION, CLASSES, PROFILES, alt_profiles, available_days
+from constants import TOKEN, SPAM_RESTRICTION, CLASSES, PROFILES, alt_profiles, available_days, profile_id
 import texts
 import keyboards
 
@@ -96,7 +96,7 @@ async def start(message: types.Message):
 
     elif user_db.get_state(tg_id) in [0, 1, 2]:
         user_db.set_state(message.from_user.id, 0)
-        await message.answer(texts.GET_CLASS, reply_markup=keyboards.list_classes())
+        await message.answer(texts.GET_CLASS_NUMBER, reply_markup=keyboards.select_class_num())
 
     else:
         await message.answer(f'{texts.START}\n\n{texts.MORE_INFO}')
@@ -162,7 +162,28 @@ async def teacher(message: types.Message):
     if not await check_signup(message.from_user.id):
         return
 
-    await message.answer(texts.WIP)
+    elements = message.text.split()
+    date = elements[1]
+    teacher = f'{elements[2]} {elements[3]}'
+    schedule = schedule_db.get_teacher(date, teacher)
+
+    classes = []
+
+    answer_text = f'{date} • {teacher}\n\n'
+    for i in range(len(schedule)):
+
+        num = schedule[i][2]
+        clas_num = schedule[i][5]
+        clas_prof = profile_id[schedule[i][6]]
+        classroom = schedule[i][8]
+
+        # идентифицирует дубликаты (пара у двух подгрупп) по номеру пары и классу
+        # если дубликат - не отображает пару
+        if f'{num}{clas_num}{clas_prof}' not in classes:
+            answer_text += f'{num}. {clas_num}{clas_prof}   [{classroom}]\n'
+        classes.append(f'{num}{clas_num}{clas_prof}')
+
+    await message.answer(answer_text)
 
 
 @dp.message_handler(commands=['settings'])
@@ -227,13 +248,14 @@ async def process_messages(message: types.Message):
 
     if state in [0, 1]:
         # class processing
-        await message.answer(texts.SELECT_GROUP_ERROR)
-        await message.answer(texts.GET_GROUP, reply_markup=keyboards.select_group())
+        user_db.set_state(tg_id, 0)
+        await message.answer(texts.SIGNUP_ERROR)
+        await message.answer(texts.GET_CLASS_NUMBER, reply_markup=keyboards.select_class_num())
 
     elif state == 2:
         # group processing
-        await message.answer(texts.INVALID_GROUP_ERROR)
-        await message.answer(texts.GET_GROUP)
+        await message.answer(texts.SIGNUP_ERROR)
+        await message.answer(texts.GET_GROUP, reply_markup=keyboards.select_group())
 
     elif state == 3:
         # date processing
@@ -272,8 +294,8 @@ async def process_messages(message: types.Message):
             group = int(elements[3])
 
         else:
-            await message.answer(message_text.INVALID_FORMAT_ERROR)
-            await message.answer(message_text.FORMATS, parse_mode='HTML')
+            await message.answer(texts.INVALID_FORMAT_ERROR)
+            await message.answer(texts.FORMATS, parse_mode='HTML')
             return
 
         if clas_profile in alt_profiles:
@@ -307,12 +329,14 @@ async def log(message):
 async def get_schedule(date: str, clas_number: int, clas_profile: str, group: int) -> str:
     if clas_profile not in PROFILES:
         raise ClasException
+    if group not in [1, 2]:
+        raise GroupException
 
     schedule = schedule_db.get(date, clas_number, clas_profile, group)
     if len(schedule) != 5:
         raise ParsingProcessException
 
-    result_text = f'{str(clas_number) + clas_profile} • группа {group} • {date}\n\n'
+    result_text = f'{str(schedule[0][5]) + profile_id[schedule[0][6]]} • группа {group} • {date}\n\n'
 
     for i in range(5):
         if schedule[i][3] is not None:
