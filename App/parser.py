@@ -1,6 +1,6 @@
 from openpyxl import load_workbook
 
-from constants import weektable_classes, PROFILES
+from constants import CLASSES, weektable_classes
 from database import ScheduleTable
 
 
@@ -50,7 +50,7 @@ class TableParser:
                     if classroom.endswith('.0'):
                         classroom = classroom[:-2]
 
-                    clas_to_write = PROFILES[weektable_classes.index(str(self.sheet.cell(2, clas).value))]
+                    clas_to_write = CLASSES[weektable_classes.index(str(self.sheet.cell(2, clas).value))]
                     clas_number = clas_to_write[:2]
                     clas_profile = clas_to_write[2:]
 

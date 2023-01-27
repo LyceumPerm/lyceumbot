@@ -9,7 +9,7 @@ class UserTable:
         self.cur = self.con.cursor()
 
     def save_user(self, telegram_id, username, name, clas_number, clas_profile, group):
-        query = 'INSERT INTO user (telegram_id, username, name, clas_number, clas_id, "group")  VALUES (?, ?, ?, ?, (SELECT id FROM class WHERE name = ?), ?);'
+        query = 'INSERT INTO user (telegram_id, username, name, clas_number, profile_id, "group")  VALUES (?, ?, ?, ?, (SELECT id FROM profile WHERE name = ?), ?);'
         self.cur.execute(query, (telegram_id, username, name, clas_number, clas_profile, group))
         self.con.commit()
 
@@ -30,7 +30,7 @@ class UserTable:
         self.con.commit()
 
     def update_user(self, id, telegram_id, username, name, clas_number, clas_profile, group):
-        query = 'UPDATE user SET telegram_id = ?, username = ?, name = ?, clas_number = ?, clas_id = (SELECT id from class WHERE name = ?), "group" = ? WHERE id = ?;'
+        query = 'UPDATE user SET telegram_id = ?, username = ?, name = ?, clas_number = ?, profile_id = (SELECT id from profile WHERE name = ?), "group" = ? WHERE id = ?;'
         self.cur.execute(query, (telegram_id, username, name, clas_number, clas_profile, group, id))
         self.con.commit()
 
@@ -55,12 +55,12 @@ class UserTable:
         self.con.commit()
 
     def get_clas_profile(self, telegram_id):
-        query = 'SELECT name FROM class WHERE id = (SELECT clas_id FROM user WHERE telegram_id = ?);'
+        query = 'SELECT name FROM profile WHERE id = (SELECT profile_id FROM user WHERE telegram_id = ?);'
         result = self.cur.execute(query, (telegram_id,)).fetchone()
         return result[0]
 
     def set_clas_profile(self, telegram_id, clas_profile):
-        query = 'UPDATE user SET clas_id = (SELECT id FROM class WHERE name = ?) WHERE telegram_id = ?;'
+        query = 'UPDATE user SET profile_id = (SELECT id FROM profile WHERE name = ?) WHERE telegram_id = ?;'
         self.cur.execute(query, (clas_profile, telegram_id))
         self.con.commit()
 
@@ -90,13 +90,13 @@ class ScheduleTable:
         self.cur = self.con.cursor()
 
     def save(self, date: str, number: int, name: str, teacher: str, clas_number: int, clas_profile: str, group: int, classroom: str):
-        query = 'INSERT INTO schedule (date, number, name, teacher, clas_number, clas_id, "group", classroom) VALUES (?, ?, ?, ?, ?, (SELECT id FROM class WHERE name = ?), ?, ?);'
+        query = 'INSERT INTO schedule (date, number, name, teacher, clas_number, profile_id, "group", classroom) VALUES (?, ?, ?, ?, ?, (SELECT id FROM profile WHERE name = ?), ?, ?);'
         self.cur.execute(query, (date, number, name, teacher, clas_number, clas_profile, group, classroom))
         self.con.commit()
 
     def get(self, date: str, clas_number: int, clas_profile: str, group: int):
-        clas_profile = self.cur.execute('SELECT id FROM class WHERE name = ?', (clas_profile,)).fetchone()[0]
-        query = 'SELECT * FROM schedule WHERE date = ? and clas_number = ? and clas_id = ? and "group" = ? ORDER BY number;'
+        clas_profile = self.cur.execute('SELECT id FROM profile WHERE name = ?', (clas_profile,)).fetchone()[0]
+        query = 'SELECT * FROM schedule WHERE date = ? and clas_number = ? and profile_id = ? and "group" = ? ORDER BY number;'
         return self.cur.execute(query, (date, clas_number, clas_profile, group)).fetchall()
 
     def clear(self):
