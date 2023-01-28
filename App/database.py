@@ -103,7 +103,8 @@ class ScheduleTable:
         query = 'SELECT * FROM schedule WHERE date = ? and teacher = ? ORDER BY number;'
         return self.cur.execute(query, (date, teacher)).fetchall()
 
-    def clear(self):
-        query = 'DELETE FROM schedule;'
-        self.cur.execute(query)
+    def clear(self, days_to_delete):
+        query = 'DELETE FROM schedule WHERE date IN (?, ?, ?, ?, ?);'
+        # ужас, TODO переписать позже
+        self.cur.execute(query, (days_to_delete[0], days_to_delete[1], days_to_delete[2], days_to_delete[3], days_to_delete[4]))
         self.con.commit()

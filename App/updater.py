@@ -4,10 +4,10 @@ import os
 import schedule
 import wget
 
-from constants import GOOGLETABLE_URL
+from constants import GOOGLETABLE_URL, CURRENT_FILE, available_days
 from parser import TableParser
 
-local_filename = 'resources/schedule/23.01week.xlsx'
+local_filename = f'resources/schedule/{CURRENT_FILE}'
 update_logger = open('logs/updates.log', 'a', encoding='utf8')
 
 
@@ -25,11 +25,11 @@ class TableUpdater:
 
         self.download_file(GOOGLETABLE_URL)
         parser = TableParser(local_filename)
-        parser.clear()
+        parser.clear(available_days[-5:])
         parser.parse()
 
     def run(self):
-        schedule.every(9).minutes.do(self.update)
+        schedule.every(10).minutes.do(self.update)
         while True:
             try:
                 schedule.run_pending()

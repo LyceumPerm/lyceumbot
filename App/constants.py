@@ -3,10 +3,13 @@ SPAM_RESTRICTION = 2  # seconds
 
 GOOGLETABLE_ID = '1tGbeevMu_7_n_pKDFjH3cNFNigClVW3v'
 GOOGLETABLE_URL = f'https://docs.google.com/spreadsheets/d/{GOOGLETABLE_ID}/export?exportFormat=xlsx'
+CURRENT_TABLE = '30.01 - 2 неделя'
+CURRENT_FILE = '30.01week.xlsx'
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-available_days = ['23.01', '24.01', '25.01', '26.01', '27.01']
+available_days = ['23.01', '24.01', '25.01', '26.01', '27.01',
+                  '30.01', '31.01', '01.02', '02.02', '03.02']
 
 weektable_classes = ['10Б', '10геохим', '10исс1', '10иис2', '10линг1', '10линг2', '10мат', '10матэк', '10мед', '10фил',
                      '10фм', '10эк', '11Б', '11биохим', '11гео', '11ис', '11линг1', '11линг2', '11мат1', '11мат2',

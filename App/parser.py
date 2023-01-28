@@ -1,18 +1,16 @@
 from openpyxl import load_workbook
 
-from constants import CLASSES, weektable_classes
+from constants import CLASSES, CURRENT_TABLE, CURRENT_FILE, weektable_classes, available_days
 from database import ScheduleTable
 
 
 class TableParser:
     def __init__(self, file_path: str):
         self.wb = load_workbook(file_path)
-        self.sheet = self.wb['1 неделя ']
+        self.sheet = self.wb[CURRENT_TABLE]
         self.schedule_db = ScheduleTable()
 
     def parse(self):
-        days = {'понедельник': '23.01', 'вторник': '24.01', 'среда': '25.01', 'четверг': '26.01', 'пятница': '27.01'}  # TODO update
-
         for clas in range(3, 76, 3):
             if clas == 39:
                 continue
@@ -22,7 +20,7 @@ class TableParser:
             merged_cells = self.sheet.merged_cells
 
             for day in range(4, 25, 5):
-                date = days[self.sheet.cell(day, 1).value.lower()]
+                date = self.sheet.cell(day, 1).value.strftime('%d.%m')
                 for row in range(day, day + 5):
 
                     merged = False
@@ -65,11 +63,11 @@ class TableParser:
                         self.schedule_db.save(date, number, subject1, teacher1, clas_number, clas_profile, 1, classrooms[0])
                         self.schedule_db.save(date, number, subject2, teacher2, clas_number, clas_profile, 2, classrooms[1])
 
-    def clear(self):
-        self.schedule_db.clear()
+    def clear(self, days_to_delete):
+        self.schedule_db.clear(days_to_delete)
 
 
 if __name__ == '__main__':
-    parser = TableParser('resources/schedule/23.01week.xlsx')
-    parser.clear()
+    parser = TableParser(f'resources/schedule/{CURRENT_FILE}')
+    parser.clear(available_days[-5:])
     parser.parse()
