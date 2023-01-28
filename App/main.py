@@ -308,7 +308,6 @@ async def process_messages(message: types.Message):
                 raise DateException()
 
             schedule = await get_schedule(date, clas_number, clas_profile, group)
-            print(schedule)
             await message.answer(schedule, parse_mode='HTML')
         except DateException:
             await message.answer(texts.NO_SCHEDULE_ERROR)
