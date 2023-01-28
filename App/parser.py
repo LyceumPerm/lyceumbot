@@ -11,6 +11,8 @@ class TableParser:
         self.schedule_db = ScheduleTable()
 
     def parse(self):
+        # какое-то кринж
+        # TODO переписать
         for clas in range(3, 76, 3):
             if clas == 39:
                 continue
@@ -29,20 +31,32 @@ class TableParser:
                             merged = True
 
                     number = row - day + 1
+
                     subject1 = self.sheet.cell(row, clas).value
+
                     try:
                         teacher1 = subject1[subject1.index('(') + 1: subject1.index(')')]
                         subject1 = subject1[:subject1.index('(') - 1]
                     except:
                         teacher1 = None
 
+                    if self.sheet.cell(row, clas).font.strikethrough:
+                        subject1 = '<s>' + subject1 + '</s> '
+                        try:
+                            teacher1 = '<s>' + teacher1 + '</s>'
+                        except:
+                            pass
 
                     subject2 = self.sheet.cell(row, clas + 1).value
+
                     try:
                         teacher2 = subject1[subject1.index('(') + 1: subject1.index(')')]
                         subject2 = subject2[:subject1.index('(') - 1]
                     except:
                         teacher2 = None
+
+                    if self.sheet.cell(row, clas + 1).font.strikethrough:
+                        subject2 = '<s>' + subject2 + '</s> '
 
                     classroom = str(self.sheet.cell(row, clas + 2).value)
                     if classroom.endswith('.0'):
@@ -60,8 +74,10 @@ class TableParser:
                         if '/' in classroom and classroom.lower() not in ['сп/з', 'с/з', 'а/з', 'акт/з', 'сп/зал',
                                                                           'с/зал', 'а/зал', 'акт/зал']:
                             classrooms = classroom.split('/')
-                        self.schedule_db.save(date, number, subject1, teacher1, clas_number, clas_profile, 1, classrooms[0])
-                        self.schedule_db.save(date, number, subject2, teacher2, clas_number, clas_profile, 2, classrooms[1])
+                        self.schedule_db.save(date, number, subject1, teacher1, clas_number, clas_profile, 1,
+                                              classrooms[0])
+                        self.schedule_db.save(date, number, subject2, teacher2, clas_number, clas_profile, 2,
+                                              classrooms[1])
 
     def clear(self, days_to_delete):
         self.schedule_db.clear(days_to_delete)

@@ -72,9 +72,8 @@ async def get_by_button(callback: types.CallbackQuery):
         await callback.answer(show_alert=False)
         return
     try:
-        await callback.message.answer(
-            await get_schedule(callback.data, user_db.get_clas_number(tg_id), user_db.get_clas_profile(tg_id),
-                               user_db.get_group(tg_id)))
+        schedule = await get_schedule(callback.data, user_db.get_clas_number(tg_id), user_db.get_clas_profile(tg_id), user_db.get_group(tg_id))
+        await callback.message.answer(schedule, parse_mode='HTML')
     except ParsingProcessException:
         await callback.message.answer(texts.TABLE_UPDATING_ERROR)
     await callback.answer(show_alert=False)
@@ -129,8 +128,8 @@ async def list(message: types.Message):
         return
 
     answer_text = 'Список доступных дней:\n\n'
-    for i in available_days:
-        answer_text += i + ' '
+    for i in range(0, len(available_days), 5):
+        answer_text += f'{available_days[i]} {available_days[i + 1]} {available_days[i + 2]} {available_days[i + 3]} {available_days[i + 4]}\n'
     await message.answer(answer_text)
 
 
@@ -309,7 +308,8 @@ async def process_messages(message: types.Message):
                 raise DateException()
 
             schedule = await get_schedule(date, clas_number, clas_profile, group)
-            await message.answer(schedule)
+            print(schedule)
+            await message.answer(schedule, parse_mode='HTML')
         except DateException:
             await message.answer(texts.NO_SCHEDULE_ERROR)
         except ClasException:
