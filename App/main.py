@@ -1,3 +1,4 @@
+import random
 import re
 import datetime
 
@@ -5,7 +6,7 @@ from aiogram import Bot, Dispatcher, executor, types
 
 from exceptions import ClasException, GroupException, DateException, ParsingProcessException
 from database import UserTable, ScheduleTable
-from constants import TOKEN, SPAM_RESTRICTION, CLASSES, PROFILES, alt_profiles, available_days, profile_id
+from constants import TOKEN, SPAM_RESTRICTION, CLASSES, PROFILES, LINK, alt_profiles, available_days, profile_id
 import texts
 import keyboards
 
@@ -119,6 +120,17 @@ async def get(message: types.Message):
         return
 
     await message.answer('Введите дату или выберите из кнопок ниже:', reply_markup=keyboards.select_day())
+
+
+@dp.message_handler(commands=['link'])
+async def link(message: types.Message):
+    await log(message)
+    if not await process_checks(message.from_user.id):
+        return
+
+    # я так и не решил, какой вариант лучше
+    answer_text = random.choice(['Ссылка на актуальное расписание:', 'Актуальная ссылка на расписание:']) + '\n' + LINK
+    await message.answer(answer_text, disable_web_page_preview=True)
 
 
 @dp.message_handler(commands=['list'])

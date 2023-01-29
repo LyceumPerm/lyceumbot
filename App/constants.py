@@ -3,6 +3,7 @@ SPAM_RESTRICTION = 2  # seconds
 
 GOOGLETABLE_ID = '1tGbeevMu_7_n_pKDFjH3cNFNigClVW3v'
 GOOGLETABLE_URL = f'https://docs.google.com/spreadsheets/d/{GOOGLETABLE_ID}/export?exportFormat=xlsx'
+LINK = 'https://docs.google.com/spreadsheets/d/1tGbeevMu_7_n_pKDFjH3cNFNigClVW3v/edit#gid=1078007661'
 CURRENT_TABLE = '30.01 - 2 неделя'
 CURRENT_FILE = '30.01week.xlsx'
 
