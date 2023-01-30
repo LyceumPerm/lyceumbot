@@ -6,7 +6,8 @@ from aiogram import Bot, Dispatcher, executor, types
 
 from exceptions import ClasException, GroupException, DateException, ParsingProcessException
 from database import UserTable, ScheduleTable
-from constants import TOKEN, SPAM_RESTRICTION, CLASSES, PROFILES, LINK, alt_profiles, available_days, profile_id
+from constants import TOKEN, SPAM_RESTRICTION, CLASSES, PROFILES, LINK, alt_profiles, available_days, profile_id, \
+    teachers, available_tdays
 import texts
 import keyboards
 
@@ -64,6 +65,44 @@ async def set_group(callback: types.CallbackQuery):
     user_db.set_group(tg_id, int(callback.data))
     await callback.answer()
     await help(callback.message)
+
+@dp.callback_query_handler(text=teachers)
+async def set_group(callback: types.CallbackQuery):
+    tg_id = callback.from_user.id
+    if callback.data == 'ᅠ':
+        await callback.answer()
+        return
+
+    user_db.set_teacher(tg_id, callback.data)
+    await bot.edit_message_text(texts.TEACHER_WARNING + '\n\nВыберите дату из кнопок ниже:', tg_id, callback.message.message_id, reply_markup=keyboards.select_tday(), parse_mode='HTML')
+    await callback.answer()
+
+
+@dp.callback_query_handler(text=available_tdays)
+async def set_group(callback: types.CallbackQuery):
+    tg_id = callback.from_user.id
+
+    date = callback.data.replace('·', '.')
+    teacher = user_db.get_teacher(tg_id)
+    schedule = schedule_db.get_teacher(date, teacher)
+
+    classes = []
+
+    answer_text = f'{date} • {teacher}\n\n'
+    for i in range(len(schedule)):
+        num = schedule[i][2]
+        clas_num = schedule[i][5]
+        clas_prof = profile_id[schedule[i][6]]
+        classroom = schedule[i][8] if schedule[i][8] != 'None' else ' — '
+
+        # идентифицирует дубликаты (пара у двух подгрупп) по номеру пары и классу
+        # если дубликат - не отображает пару
+        if f'{num}{clas_num}{clas_prof}' not in classes:
+            answer_text += f'{num}. {clas_num}{clas_prof} - {schedule[i][3]}  [{classroom}]\n'
+        classes.append(f'{num}{clas_num}{clas_prof}')
+
+    await bot.send_message(tg_id, answer_text)
+    await callback.answer()
 
 
 @dp.callback_query_handler()
@@ -167,37 +206,13 @@ async def set_group(message: types.Message):
     await message.answer(texts.GET_GROUP, reply_markup=keyboards.select_group())
 
 
-@dp.message_handler(commands=['teacher'])
+@dp.message_handler(commands=['t', 'teacher'])
 async def teacher(message: types.Message):
     await log(message)
     if not await process_checks(message.from_user.id):
         return
 
-    await message.answer(texts.WIP)
-    return
-
-    elements = message.text.split()
-    date = elements[1]
-    teacher = f'{elements[2]} {elements[3]}'
-    schedule = schedule_db.get_teacher(date, teacher)
-
-    classes = []
-
-    answer_text = f'{date} • {teacher}\n\n'
-    for i in range(len(schedule)):
-
-        num = schedule[i][2]
-        clas_num = schedule[i][5]
-        clas_prof = profile_id[schedule[i][6]]
-        classroom = schedule[i][8]
-
-        # идентифицирует дубликаты (пара у двух подгрупп) по номеру пары и классу
-        # если дубликат - не отображает пару
-        if f'{num}{clas_num}{clas_prof}' not in classes:
-            answer_text += f'{num}. {clas_num}{clas_prof}   [{classroom}]\n'
-        classes.append(f'{num}{clas_num}{clas_prof}')
-
-    await message.answer(answer_text)
+    await message.answer('Выберите преподавателя из списка ниже', reply_markup=keyboards.select_teacher())
 
 
 @dp.message_handler(commands=['settings'])
