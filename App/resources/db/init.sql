@@ -52,7 +52,6 @@ CREATE TABLE user
     name         VARCHAR                           NOT NULL,
     clas_number  INTEGER,
     profile_id   INTEGER,
-    teacher      VARCHAR,
     "group"      INTEGER,
     state        INTEGER                           NOT NULL DEFAULT 0,
     last_message VARCHAR                                    DEFAULT '2000-01-01 00:00:00.000000',

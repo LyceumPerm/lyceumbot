@@ -6,8 +6,7 @@ from aiogram import Bot, Dispatcher, executor, types
 
 from exceptions import ClasException, GroupException, DateException, ParsingProcessException
 from database import UserTable, ScheduleTable
-from constants import TOKEN, SPAM_RESTRICTION, CLASSES, PROFILES, LINK, alt_profiles, available_days, profile_id, \
-    teachers, available_tdays
+from constants import TOKEN, SPAM_RESTRICTION, CLASSES, PROFILES, LINK, alt_profiles, available_days, profile_id, teachers
 import texts
 import keyboards
 
@@ -67,39 +66,55 @@ async def set_group(callback: types.CallbackQuery):
     await help(callback.message)
 
 @dp.callback_query_handler(text=teachers)
-async def set_group(callback: types.CallbackQuery):
+async def select_teacher(callback: types.CallbackQuery):
     tg_id = callback.from_user.id
     if callback.data == 'ᅠ':
         await callback.answer()
         return
 
-    user_db.set_teacher(tg_id, callback.data)
-    await bot.edit_message_text(texts.TEACHER_WARNING + '\n\nВыберите дату из кнопок ниже:', tg_id, callback.message.message_id, reply_markup=keyboards.select_tday(), parse_mode='HTML')
+    await bot.edit_message_text(texts.TEACHER_WARNING, tg_id, callback.message.message_id, parse_mode='HTML')
+    await bot.send_message(tg_id, f'Преподаватель: {callback.data}\n{texts.SELECT_TDATE}', reply_markup=keyboards.select_tday(), parse_mode='HTML')
     await callback.answer()
 
 
-@dp.callback_query_handler(text=available_tdays)
-async def set_group(callback: types.CallbackQuery):
+@dp.callback_query_handler(text=['teachers_prev', 'teachers_next'])
+async def change_teacher_list(callback: types.CallbackQuery):
     tg_id = callback.from_user.id
 
-    date = callback.data.replace('·', '.')
-    teacher = user_db.get_teacher(tg_id)
+    if callback.data == 'teachers_prev':
+        await bot.edit_message_text(texts.SELECT_TEACHER, tg_id, callback.message.message_id, reply_markup=keyboards.select_teacher_part1())
+    else:
+        await bot.edit_message_text(texts.SELECT_TEACHER, tg_id, callback.message.message_id,reply_markup=keyboards.select_teacher_part2())
+    await callback.answer()
+
+
+@dp.callback_query_handler(text=list(map(lambda item: item + 't', available_days)))
+async def get_teacher(callback: types.CallbackQuery):
+    tg_id = callback.from_user.id
+
+    date = callback.data[:-1]
+    teacher = callback.message.text[callback.message.text.index(':') + 2: callback.message.text.index('\n')]
     schedule = schedule_db.get_teacher(date, teacher)
 
-    classes = []
+    await log(f'get teacher: {callback.data} - {teacher}')
 
+    added_classes = []  # пары, которые уже добавлены в сообщение
     answer_text = f'{date} • {teacher}\n\n'
-    for i in range(len(schedule)):
-        num = schedule[i][2]
-        clas_num = schedule[i][5]
-        clas_prof = profile_id[schedule[i][6]]
-        classroom = schedule[i][8] if schedule[i][8] != 'None' else ' — '
 
-        # идентифицирует дубликаты (пара у двух подгрупп) по номеру пары и классу
-        # если дубликат - не отображает пару
-        if f'{num}{clas_num}{clas_prof}' not in classes:
-            answer_text += f'{num}. {clas_num}{clas_prof} - {schedule[i][3]}  [{classroom}]\n'
-        classes.append(f'{num}{clas_num}{clas_prof}')
+    for i in range(1, 6):
+        classes = []
+        for line in schedule:
+            if line[2] == i:
+                classes.append(line)
+        if classes:
+            for clas in classes:
+                if f'{i}{clas[5]}{profile_id[clas[6]]}' not in added_classes:
+                    answer_text += f'{i}. {clas[5]}{profile_id[clas[6]]} - {clas[3]}   [{clas[8] if clas[8] not in ["None", "", None] else " — "}]\n'
+                    added_classes.append(f'{i}{clas[5]}{profile_id[clas[6]]}')
+        else:
+            answer_text += f'{i}.\n'
+
+
 
     await bot.send_message(tg_id, answer_text)
     await callback.answer()
@@ -107,8 +122,13 @@ async def set_group(callback: types.CallbackQuery):
 
 @dp.callback_query_handler()
 async def get_by_button(callback: types.CallbackQuery):
+    if callback.data in ['ᅠ', 'None']:
+        await callback.answer()
+        return
+    await log(f'get by button: {callback.data}')
+
     tg_id = callback.from_user.id
-    if not await process_checks(tg_id, spam=True):
+    if not await process_checks(tg_id):
         await callback.answer(show_alert=False)
         return
     try:
@@ -212,7 +232,7 @@ async def teacher(message: types.Message):
     if not await process_checks(message.from_user.id):
         return
 
-    await message.answer('Выберите преподавателя из списка ниже', reply_markup=keyboards.select_teacher())
+    await message.answer(texts.SELECT_TEACHER, reply_markup=keyboards.select_teacher_part1())
 
 
 @dp.message_handler(commands=['settings'])

@@ -83,15 +83,6 @@ class UserTable:
         self.cur.execute(query, (last_message, telegram_id))
         self.con.commit()
 
-    def get_teacher(self, telegram_id):
-        query = 'SELECT teacher FROM user WHERE telegram_id = ?;'
-        return self.cur.execute(query, (telegram_id,)).fetchone()[0]
-
-    def set_teacher(self, telegram_id, teacher):
-        query = 'UPDATE user SET teacher = ? WHERE telegram_id = ?;'
-        self.cur.execute(query, (teacher, telegram_id))
-        self.con.commit()
-
 
 class ScheduleTable:
     def __init__(self):
