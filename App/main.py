@@ -91,6 +91,12 @@ async def change_teacher_list(callback: types.CallbackQuery):
 @dp.callback_query_handler(text=list(map(lambda item: item + 't', available_days)))
 async def get_teacher(callback: types.CallbackQuery):
     tg_id = callback.from_user.id
+    if await is_on_update():
+        await bot.send_message(tg_id, texts.TABLE_UPDATING_ERROR)
+        await callback.answer()
+        return
+
+
 
     date = callback.data[:-1]
     teacher = callback.message.text[callback.message.text.index(':') + 2: callback.message.text.index('\n')]
@@ -229,7 +235,7 @@ async def set_group(message: types.Message):
 @dp.message_handler(commands=['t', 'teacher'])
 async def teacher(message: types.Message):
     await log(message)
-    if not await process_checks(message.from_user.id):
+    if not await process_checks(message.from_user.id, signup=False):
         return
 
     await message.answer(texts.SELECT_TEACHER, reply_markup=keyboards.select_teacher_part1())
@@ -434,6 +440,10 @@ async def check_spam(id):
 
     user_db.set_lastmessage(id, now)
     return True
+
+async def is_on_update():
+    schedule = schedule_db.get(available_days[-1], 11, 'эк', 2)
+    return len(schedule) != 5
 
 
 #
