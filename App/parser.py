@@ -1,6 +1,6 @@
 from openpyxl import load_workbook
 
-from constants import CLASSES, CURRENT_TABLE, CURRENT_FILE, weektable_classes, available_days, alt_teachers
+from constants import CURRENT_TABLE, CURRENT_FILE, available_days, alt_teachers, alt_profiles
 from database import ScheduleTable
 
 
@@ -28,9 +28,12 @@ class TableParser:
                         if str(i).startswith(self.sheet.cell(row, clas).coordinate):
                             merged = True
 
-                    clas_to_write = CLASSES[weektable_classes.index(str(self.sheet.cell(2, clas).value))]
-                    clas_number = clas_to_write[:2]
-                    clas_profile = clas_to_write[2:]
+                    table_class = self.sheet.cell(2, clas).value
+                    class_number = table_class[:2]
+                    class_profile = table_class[2:].lower()
+                    if class_profile in alt_profiles:
+                        class_profile = alt_profiles[class_profile]
+
                     number = row - day + 1
                     classroom = str(self.sheet.cell(row, clas + 2).value)
                     if classroom.endswith('.0'):
@@ -51,8 +54,8 @@ class TableParser:
                             subject = '<s>' + subject + '</s>'
                             teacher = '<s>' + teacher + '</s>'
 
-                        self.schedule_db.save(date, number, subject, teacher, clas_number, clas_profile, 1, classroom)
-                        self.schedule_db.save(date, number, subject, teacher, clas_number, clas_profile, 2, classroom)
+                        self.schedule_db.save(date, number, subject, teacher, class_number, class_profile, 1, classroom)
+                        self.schedule_db.save(date, number, subject, teacher, class_number, class_profile, 2, classroom)
 
                     else:
                         text1 = self.sheet.cell(row, clas).value
@@ -86,8 +89,8 @@ class TableParser:
                                                                           'с/зал', 'а/зал', 'акт/зал']:
                             classrooms = classroom.split('/')
 
-                        self.schedule_db.save(date, number, subject1, teacher1, clas_number, clas_profile, 1, classrooms[0])
-                        self.schedule_db.save(date, number, subject2, teacher2, clas_number, clas_profile, 2, classrooms[1])
+                        self.schedule_db.save(date, number, subject1, teacher1, class_number, class_profile, 1, classrooms[0])
+                        self.schedule_db.save(date, number, subject2, teacher2, class_number, class_profile, 2, classrooms[1])
 
     def format_name(self, name: str) -> str:
         if len(name) < 3:
