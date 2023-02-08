@@ -1,4 +1,3 @@
 aiogram
 openpyxl
-schedule
 wget

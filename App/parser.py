@@ -106,8 +106,13 @@ class TableParser:
     def clear(self, days_to_delete):
         self.schedule_db.clear(days_to_delete)
 
+    def __del__(self):
+        self.wb.close()
+        self.schedule_db.con.close()
+
 
 if __name__ == '__main__':
     parser = TableParser(f'resources/schedule/{CURRENT_FILE}')
     parser.clear(available_days[-5:])
     parser.parse()
+    parser.__del__()
