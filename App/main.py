@@ -1,6 +1,7 @@
 import random
 import re
 import datetime
+import logging
 
 from aiogram import Bot, Dispatcher, executor, types
 
@@ -22,6 +23,8 @@ schedule_db = ScheduleTable()
 
 @dp.callback_query_handler(text="classes")
 async def classes(callback: types.CallbackQuery):
+    await log(callback)
+
     text = 'Список классов:\n\n'
     for i in range(24):
         text += CLASSES[i] + '\n'
@@ -32,6 +35,8 @@ async def classes(callback: types.CallbackQuery):
 
 @dp.callback_query_handler(text=['10', '11'])
 async def set_class_number(callback: types.CallbackQuery):
+    await log(callback)
+
     tg_id = callback.from_user.id
 
     func = keyboards.select_10_profile() if callback.data == '10' else keyboards.select_11_profile()
@@ -44,6 +49,8 @@ async def set_class_number(callback: types.CallbackQuery):
 
 @dp.callback_query_handler(text=CLASSES)
 async def set_class_profile(callback: types.CallbackQuery):
+    await log(callback)
+
     tg_id = callback.from_user.id
 
     await bot.edit_message_text(texts.GET_GROUP, tg_id, callback.message.message_id,
@@ -57,34 +64,45 @@ async def set_class_profile(callback: types.CallbackQuery):
 
 @dp.callback_query_handler(text=['1', '2'])
 async def set_group(callback: types.CallbackQuery):
+
+    await log(callback)
+
     tg_id = callback.from_user.id
     await bot.edit_message_text(texts.SUCCESS, tg_id, callback.message.message_id)
     user_db.set_state(tg_id, 3)
 
     user_db.set_group(tg_id, int(callback.data))
     await callback.answer()
-    await help(callback.message)
+    await bot.send_message(tg_id, texts.HELP)
+
 
 @dp.callback_query_handler(text=teachers)
 async def select_teacher(callback: types.CallbackQuery):
+    await log(callback)
+
     tg_id = callback.from_user.id
     if callback.data == 'ᅠ':
         await callback.answer()
         return
 
     await bot.edit_message_text(texts.TEACHER_WARNING, tg_id, callback.message.message_id, parse_mode='HTML')
-    await bot.send_message(tg_id, f'Преподаватель: {callback.data}\n{texts.SELECT_TDATE}', reply_markup=keyboards.select_tday(), parse_mode='HTML')
+    await bot.send_message(tg_id, f'Преподаватель: {callback.data}\n{texts.SELECT_TDATE}',
+                           reply_markup=keyboards.select_tday(), parse_mode='HTML')
     await callback.answer()
 
 
 @dp.callback_query_handler(text=['teachers_prev', 'teachers_next'])
 async def change_teacher_list(callback: types.CallbackQuery):
+    await log(callback)
+
     tg_id = callback.from_user.id
 
     if callback.data == 'teachers_prev':
-        await bot.edit_message_text(texts.SELECT_TEACHER, tg_id, callback.message.message_id, reply_markup=keyboards.select_teacher_part1())
+        await bot.edit_message_text(texts.SELECT_TEACHER, tg_id, callback.message.message_id,
+                                    reply_markup=keyboards.select_teacher_part1())
     else:
-        await bot.edit_message_text(texts.SELECT_TEACHER, tg_id, callback.message.message_id,reply_markup=keyboards.select_teacher_part2())
+        await bot.edit_message_text(texts.SELECT_TEACHER, tg_id, callback.message.message_id,
+                                    reply_markup=keyboards.select_teacher_part2())
     await callback.answer()
 
 
@@ -96,13 +114,11 @@ async def get_teacher(callback: types.CallbackQuery):
         await callback.answer()
         return
 
-
-
     date = callback.data[:-1]
     teacher = callback.message.text[callback.message.text.index(':') + 2: callback.message.text.index('\n')]
     schedule = schedule_db.get_teacher(date, teacher)
 
-    await log(f'get teacher: {callback.data} - {teacher}')
+    await log(callback, teacher=teacher)
 
     added_classes = []  # пары, которые уже добавлены в сообщение
     answer_text = f'{date} • {teacher}\n\n'
@@ -120,8 +136,6 @@ async def get_teacher(callback: types.CallbackQuery):
         else:
             answer_text += f'{i}.\n'
 
-
-
     await bot.send_message(tg_id, answer_text)
     await callback.answer()
 
@@ -131,14 +145,15 @@ async def get_by_button(callback: types.CallbackQuery):
     if callback.data in ['ᅠ', 'None']:
         await callback.answer()
         return
-    await log(f'get by button: {callback.data}')
+    await log(callback)
 
     tg_id = callback.from_user.id
     if not await process_checks(tg_id, spam=True):
         await callback.answer(show_alert=False)
         return
     try:
-        schedule = await get_schedule(callback.data, user_db.get_clas_number(tg_id), user_db.get_clas_profile(tg_id), user_db.get_group(tg_id))
+        schedule = await get_schedule(callback.data, user_db.get_clas_number(tg_id), user_db.get_clas_profile(tg_id),
+                                      user_db.get_group(tg_id))
         await callback.message.answer(schedule, parse_mode='HTML')
     except ParsingProcessException:
         await callback.message.answer(texts.TABLE_UPDATING_ERROR)
@@ -376,8 +391,24 @@ async def process_messages(message: types.Message):
 
 # UTIL FUNCTIONS
 
-async def log(message):
-    message_logger.write(str(message) + '\n')
+async def log(data: types.Message | types.CallbackQuery, teacher=False):
+    newline = ''
+    user_info = f'id: {data.from_user.id}, first_name: {data.from_user.first_name}, ' \
+                f'last_name: {data.from_user.last_name}, username: {data.from_user.username}'
+
+    try:
+        if isinstance(data, types.Message):
+            newline = f'[{data.date}] ({user_info}) {data.text}\n'
+
+        elif isinstance(data, types.CallbackQuery):
+            newline = f'[callback] ({user_info}) {(teacher + " - ") if teacher else ""}{data.data}\n'
+
+    except Exception:
+        message_logger.write('LOGGING ERROR\n')
+
+    print(newline)
+
+    message_logger.write(newline)
     message_logger.flush()
 
 
@@ -391,7 +422,7 @@ async def get_schedule(date: str, clas_number: int, clas_profile: str, group: in
     if len(schedule) != 5:
         raise ParsingProcessException
 
-    result_text = f'{str(schedule[0][5]) + (PROFILES.index(schedule[0][6]) + 1)} • группа {group} • {date}\n\n'
+    result_text = f'{str(schedule[0][5]) + (PROFILES[schedule[0][6] - 1])} • группа {group} • {date}\n\n'
 
     for i in range(5):
         if schedule[i][3] is not None:
@@ -408,8 +439,8 @@ async def get_schedule(date: str, clas_number: int, clas_profile: str, group: in
 # если не прошли проверки - возвращает False
 async def process_checks(id, signup=True, spam=False, user_exists=True):
     if user_exists and not user_db.user_exists(id):
-            await bot.send_message(id, texts.SWW_ERROR)
-            return
+        await bot.send_message(id, texts.SWW_ERROR)
+        return
     if signup and spam:
         return await check_signup(id) and await check_spam(id)
     if signup:
@@ -441,6 +472,7 @@ async def check_spam(id):
     user_db.set_lastmessage(id, now)
     return True
 
+
 async def is_on_update():
     schedule = schedule_db.get(available_days[-1], 11, 'эк', 2)
     return len(schedule) != 5
@@ -450,6 +482,7 @@ async def is_on_update():
 
 
 def main():
+    logging.basicConfig(level=logging.INFO)
     executor.start_polling(dp)
 
 
