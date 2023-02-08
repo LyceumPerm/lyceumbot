@@ -406,8 +406,6 @@ async def log(data: types.Message | types.CallbackQuery, teacher=False):
     except Exception:
         message_logger.write('LOGGING ERROR\n')
 
-    print(newline)
-
     message_logger.write(newline)
     message_logger.flush()
 

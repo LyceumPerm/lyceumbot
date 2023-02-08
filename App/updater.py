@@ -28,6 +28,9 @@ class TableUpdater:
         parser.clear(available_days[-5:])
         parser.parse()
 
+        update_logger.write(str(datetime.datetime.now()) + '\n\n')
+        update_logger.flush()
+
     def run(self):
         schedule.every(10).minutes.do(self.update)
         while True:
