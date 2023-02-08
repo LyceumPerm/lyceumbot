@@ -6,7 +6,7 @@ from aiogram import Bot, Dispatcher, executor, types
 
 from exceptions import ClasException, GroupException, DateException, ParsingProcessException
 from database import UserTable, ScheduleTable
-from constants import TOKEN, SPAM_RESTRICTION, CLASSES, PROFILES, LINK, alt_profiles, available_days, profile_id, teachers
+from constants import TOKEN, SPAM_RESTRICTION, CLASSES, PROFILES, LINK, alt_profiles, available_days, teachers
 import texts
 import keyboards
 
@@ -114,9 +114,9 @@ async def get_teacher(callback: types.CallbackQuery):
                 classes.append(line)
         if classes:
             for clas in classes:
-                if f'{i}{clas[5]}{profile_id[clas[6]]}' not in added_classes:
-                    answer_text += f'{i}. {clas[5]}{profile_id[clas[6]]} - {clas[3]}   [{clas[8] if clas[8] not in ["None", "", None] else " — "}]\n'
-                    added_classes.append(f'{i}{clas[5]}{profile_id[clas[6]]}')
+                if f'{i}{clas[5]}{PROFILES[clas[6] - 1]}' not in added_classes:
+                    answer_text += f'{i}. {clas[5]}{PROFILES[clas[6] - 1]} - {clas[3]}   [{clas[8] if clas[8] not in ["None", "", None] else " — "}]\n'
+                    added_classes.append(f'{i}{clas[5]}{PROFILES[clas[6] - 1]}')
         else:
             answer_text += f'{i}.\n'
 
@@ -134,7 +134,7 @@ async def get_by_button(callback: types.CallbackQuery):
     await log(f'get by button: {callback.data}')
 
     tg_id = callback.from_user.id
-    if not await process_checks(tg_id):
+    if not await process_checks(tg_id, spam=True):
         await callback.answer(show_alert=False)
         return
     try:
@@ -391,7 +391,7 @@ async def get_schedule(date: str, clas_number: int, clas_profile: str, group: in
     if len(schedule) != 5:
         raise ParsingProcessException
 
-    result_text = f'{str(schedule[0][5]) + profile_id[schedule[0][6]]} • группа {group} • {date}\n\n'
+    result_text = f'{str(schedule[0][5]) + (PROFILES.index(schedule[0][6]) + 1)} • группа {group} • {date}\n\n'
 
     for i in range(5):
         if schedule[i][3] is not None:
