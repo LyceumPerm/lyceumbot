@@ -89,12 +89,18 @@ class ScheduleTable:
         self.con = sqlite3.connect(DB_PATH)
         self.cur = self.con.cursor()
 
-    def save(self, date: str, number: int, name: str, teacher: str, clas_number: int, clas_profile: str, group: int, classroom: str):
+    def save(self, date: str, number: int, name: str, teacher: str, clas_number: int, clas_profile: str, group: int,
+             classroom: str):
         query = 'INSERT INTO schedule (date, number, name, teacher, clas_number, profile_id, "group", classroom) VALUES (?, ?, ?, ?, ?, (SELECT id FROM profile WHERE name = ?), ?, ?);'
         self.cur.execute(query, (date, number, name, teacher, clas_number, clas_profile, group, classroom))
         self.con.commit()
 
-    def get(self, date: str, clas_number: int, clas_profile: str, group: int):
+    def get(self, date: str, clas_number: int, clas_profile: str):
+        clas_profile = self.cur.execute('SELECT id FROM profile WHERE name = ?', (clas_profile,)).fetchone()[0]
+        query = 'SELECT * FROM schedule WHERE date = ? and clas_number = ? and profile_id = ? ORDER BY number;'
+        return self.cur.execute(query, (date, clas_number, clas_profile)).fetchall()
+
+    def get_for_group(self, date: str, clas_number: int, clas_profile: str, group: int):
         clas_profile = self.cur.execute('SELECT id FROM profile WHERE name = ?', (clas_profile,)).fetchone()[0]
         query = 'SELECT * FROM schedule WHERE date = ? and clas_number = ? and profile_id = ? and "group" = ? ORDER BY number;'
         return self.cur.execute(query, (date, clas_number, clas_profile, group)).fetchall()

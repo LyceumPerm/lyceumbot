@@ -56,6 +56,14 @@ def select_day():
     return keyboard
 
 
+def select_day_for_class():
+    days = available_days[-5:]
+    buttons = [[InlineKeyboardButton(day, callback_data=day + 'c') for day in days]]
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
+    return keyboard
+
+
 def select_teacher_part1():
     buttons = []
     for i in range(0, 24, 3):
@@ -93,3 +101,16 @@ def select_tday():
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
     return keyboard
+
+
+def select_class():
+    buttons = []
+
+    for i in range(0, 24, 3):
+        buttons.append(
+            [InlineKeyboardButton(CLASSES[i], callback_data=CLASSES[i] + 'c'),
+             InlineKeyboardButton(CLASSES[i + 1], callback_data=CLASSES[i + 1] + 'c'),
+             InlineKeyboardButton(CLASSES[i + 2], callback_data=CLASSES[i + 2] + 'c')]
+        )
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)

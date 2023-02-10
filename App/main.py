@@ -140,6 +140,27 @@ async def get_teacher_schedule(callback: types.CallbackQuery):
     await callback.answer()
 
 
+@dp.callback_query_handler(text=list(map(lambda item: item + 'c', available_days[-5:])))
+async def select_class1(callback: types.CallbackQuery):
+    tg_id = callback.from_user.id
+    await callback.answer()
+
+    await bot.send_message(tg_id, f'День: {callback.data[:-1]}\nВыберите класс с помощью кнопок ниже',
+                           reply_markup=keyboards.select_class())
+
+
+@dp.callback_query_handler(text=list(map(lambda item: item + 'c', CLASSES)))
+async def get_for_class(callback: types.CallbackQuery):
+    tg_id = callback.from_user.id
+    await callback.answer()
+
+    date = callback.message.text[6:11]
+    class_number = callback.data[:2]
+    class_profile = callback.data[2:-1]
+
+    await bot.send_message(tg_id, await get_schedule(date, class_number, class_profile), parse_mode='HTML')
+
+
 @dp.callback_query_handler()
 async def get_by_button(callback: types.CallbackQuery):
     if callback.data in ['ᅠ', 'None']:
@@ -152,8 +173,8 @@ async def get_by_button(callback: types.CallbackQuery):
         await callback.answer(show_alert=False)
         return
     try:
-        schedule = await get_schedule(callback.data, user_db.get_clas_number(tg_id), user_db.get_clas_profile(tg_id),
-                                      user_db.get_group(tg_id))
+        schedule = await get_schedule_for_group(callback.data, user_db.get_clas_number(tg_id),
+                                                user_db.get_clas_profile(tg_id), user_db.get_group(tg_id))
         await callback.message.answer(schedule, parse_mode='HTML')
     except ParsingProcessException:
         await callback.message.answer(texts.TABLE_UPDATING_ERROR)
@@ -200,6 +221,15 @@ async def get(message: types.Message):
         return
 
     await message.answer('Введите дату или выберите из кнопок ниже:', reply_markup=keyboards.select_day())
+
+
+@dp.message_handler(commands=['class'])
+async def get_for_class(message: types.Message):
+    await log(message)
+    if not await process_checks(message.from_user.id):
+        return
+
+    await message.answer('Выберите дату с помощью кнопок ниже:', reply_markup=keyboards.select_day_for_class())
 
 
 @dp.message_handler(commands=['link'])
@@ -375,7 +405,7 @@ async def process_messages(message: types.Message):
             if date not in available_days:
                 raise DateException()
 
-            schedule = await get_schedule(date, clas_number, clas_profile, group)
+            schedule = await get_schedule_for_group(date, clas_number, clas_profile, group)
             await message.answer(schedule, parse_mode='HTML')
         except DateException:
             await message.answer(texts.NO_SCHEDULE_ERROR)
@@ -398,19 +428,66 @@ async def log(data: types.Message | types.CallbackQuery, teacher_name: str = Fal
     newline = f'[{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] ' \
               f'[{"msg" if isinstance(data, types.Message) else "clb"}] ' \
               f'({user_info}) ' \
-              f'{(teacher_name + " - ") if teacher_name else ""}{data.text}\n'
+              f'{(teacher_name + " - ") if teacher_name else ""}{data.text if isinstance(data, types.Message) else data.data}\n'
 
     message_logger.write(newline)
     message_logger.flush()
 
 
-async def get_schedule(date: str, clas_number: int, clas_profile: str, group: int) -> str:
+async def get_schedule(date: str, clas_number: int, clas_profile: str) -> str:
+    if clas_profile not in PROFILES:
+        raise ClasException
+
+    schedule = schedule_db.get(date, clas_number, clas_profile)
+    if len(schedule) != 10:
+        raise ParsingProcessException
+
+    result_text = f'{str(schedule[0][5]) + (PROFILES[schedule[0][6] - 1])} • {date}\n\n'
+
+    # ну и треш
+    # TODO переписать
+    for i in range(0, 10, 2):
+        lesson1 = schedule[i][3]
+        teacher1 = schedule[i][4]
+        classroom1 = schedule[i][8]
+
+        lesson2 = schedule[i + 1][3]
+        teacher2 = schedule[i + 1][4]
+        classroom2 = schedule[i + 1][8]
+
+        # не отображаем пятую пару, если её нет
+        if schedule[i][2] == 5 and lesson1 is None and lesson2 is None:
+            continue
+
+        if lesson1 is None:
+            lesson1 = '✖'
+            teacher1 = ''
+            classroom1 = 'None'
+        if lesson2 is None:
+            lesson2 = '✖'
+            teacher2 = ''
+            classroom2 = 'None'
+
+        if lesson1 == lesson2 and teacher1 == teacher2 and classroom1 == classroom2:
+            if lesson1 == '✖':
+                result_text += f'{schedule[i][2]}. {lesson1}\n'
+            else:
+                result_text += f'{schedule[i][2]}. {lesson1}{" (" + teacher1 + ")" if teacher1 else ""}   ' \
+                               f'[{classroom1 if classroom1 != "None" else " — "}]\n'
+        else:
+            result_text += f'{schedule[i][2]}. {lesson1}{" (" + teacher1 + ")" if teacher1 else ""} [{classroom1 if classroom1 != "None" else " — "}]\n' \
+                           f'     {lesson2}{" (" + teacher2 + ")" if teacher2 else ""} [{classroom2 if classroom2 != "None" else " — "}]\n'
+
+    return result_text
+
+
+async def get_schedule_for_group(date: str, clas_number: int, clas_profile: str, group: int) -> str:
     if clas_profile not in PROFILES:
         raise ClasException
     if group not in [1, 2]:
         raise GroupException
 
-    schedule = schedule_db.get(date, clas_number, clas_profile, group)
+    schedule = schedule_db.get_for_group(date, clas_number, clas_profile, group)
     if len(schedule) != 5:
         raise ParsingProcessException
 
@@ -467,7 +544,7 @@ async def check_spam(id):
 
 
 async def is_on_update():
-    schedule = schedule_db.get(available_days[-1], 11, 'эк', 2)
+    schedule = schedule_db.get_for_group(available_days[-1], 11, 'эк', 2)
     return len(schedule) != 5
 
 
