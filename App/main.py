@@ -64,7 +64,6 @@ async def set_class_profile(callback: types.CallbackQuery):
 
 @dp.callback_query_handler(text=['1', '2'])
 async def set_group(callback: types.CallbackQuery):
-
     await log(callback)
 
     tg_id = callback.from_user.id
@@ -107,7 +106,7 @@ async def change_teacher_list(callback: types.CallbackQuery):
 
 
 @dp.callback_query_handler(text=list(map(lambda item: item + 't', available_days)))
-async def get_teacher(callback: types.CallbackQuery):
+async def get_teacher_schedule(callback: types.CallbackQuery):
     tg_id = callback.from_user.id
     if await is_on_update():
         await bot.send_message(tg_id, texts.TABLE_UPDATING_ERROR)
@@ -115,23 +114,24 @@ async def get_teacher(callback: types.CallbackQuery):
         return
 
     date = callback.data[:-1]
-    teacher = callback.message.text[callback.message.text.index(':') + 2: callback.message.text.index('\n')]
-    schedule = schedule_db.get_teacher(date, teacher)
+    teacher_name = callback.message.text[callback.message.text.index(':') + 2: callback.message.text.index('\n')]
+    schedule = schedule_db.get_teacher(date, teacher_name)
 
-    await log(callback, teacher=teacher)
+    await log(callback, teacher_name=teacher_name)
 
     added_classes = []  # пары, которые уже добавлены в сообщение
-    answer_text = f'{date} • {teacher}\n\n'
+    answer_text = f'{date} • {teacher_name}\n\n'
 
     for i in range(1, 6):
-        classes = []
+        lessons = []
         for line in schedule:
             if line[2] == i:
-                classes.append(line)
-        if classes:
-            for clas in classes:
+                lessons.append(line)
+        if lessons:
+            for clas in lessons:
                 if f'{i}{clas[5]}{PROFILES[clas[6] - 1]}' not in added_classes:
-                    answer_text += f'{i}. {clas[5]}{PROFILES[clas[6] - 1]} - {clas[3]}   [{clas[8] if clas[8] not in ["None", "", None] else " — "}]\n'
+                    answer_text += f'{i}. {clas[5]}{PROFILES[clas[6] - 1]} - {clas[3]}   ' \
+                                   f'[{clas[8] if clas[8] not in ["None", "", None] else " — "}]\n'
                     added_classes.append(f'{i}{clas[5]}{PROFILES[clas[6] - 1]}')
         else:
             answer_text += f'{i}.\n'
@@ -183,7 +183,7 @@ async def start(message: types.Message):
 
 
 @dp.message_handler(commands=['help'])
-async def help(message: types.Message):
+async def get_help(message: types.Message):
     await log(message)
 
     await message.answer(texts.HELP, parse_mode='HTML')
@@ -214,14 +214,14 @@ async def link(message: types.Message):
 
 
 @dp.message_handler(commands=['list'])
-async def list(message: types.Message):
+async def get_days_list(message: types.Message):
     await log(message)
     if not await process_checks(message.from_user.id):
         return
 
     answer_text = 'Список доступных дней:\n\n'
     for i in range(0, len(available_days), 5):
-        answer_text += f'{available_days[i]} {available_days[i + 1]} {available_days[i + 2]} {available_days[i + 3]} {available_days[i + 4]}\n'
+        answer_text += ' '.join(available_days[i: i + 5]) + '\n'
     await message.answer(answer_text)
 
 
@@ -391,20 +391,14 @@ async def process_messages(message: types.Message):
 
 # UTIL FUNCTIONS
 
-async def log(data: types.Message | types.CallbackQuery, teacher=False):
-    newline = ''
+async def log(data: types.Message | types.CallbackQuery, teacher_name: str = False):
     user_info = f'id: {data.from_user.id}, first_name: {data.from_user.first_name}, ' \
                 f'last_name: {data.from_user.last_name}, username: {data.from_user.username}'
 
-    try:
-        if isinstance(data, types.Message):
-            newline = f'[{data.date}] ({user_info}) {data.text}\n'
-
-        elif isinstance(data, types.CallbackQuery):
-            newline = f'[callback] ({user_info}) {(teacher + " - ") if teacher else ""}{data.data}\n'
-
-    except Exception:
-        message_logger.write('LOGGING ERROR\n')
+    newline = f'[{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] ' \
+              f'[{"msg" if isinstance(data, types.Message) else "clb"}] ' \
+              f'({user_info}) ' \
+              f'{(teacher_name + " - ") if teacher_name else ""}{data.text}\n'
 
     message_logger.write(newline)
     message_logger.flush()
@@ -425,8 +419,9 @@ async def get_schedule(date: str, clas_number: int, clas_profile: str, group: in
     for i in range(5):
         if schedule[i][3] is not None:
             classroom = schedule[i][8]
-            teacher = schedule[i][4]
-            result_text += f'{schedule[i][2]}. {schedule[i][3]}{" (" + teacher + ")" if teacher else ""}   [{classroom if classroom != "None" else " — "}]\n'
+            teacher_name = schedule[i][4]
+            result_text += f'{schedule[i][2]}. {schedule[i][3]}{" (" + teacher_name + ")" if teacher_name else ""}   ' \
+                           f'[{classroom if classroom != "None" else " — "}]\n'
         else:
             if schedule[i][2] != 5:
                 result_text += f'{i + 1}. ✖ \n'

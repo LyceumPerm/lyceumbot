@@ -59,5 +59,4 @@
 
 1. aiogram
 2. openpyxl
-3. schedule
-4. wget
+3. wget
