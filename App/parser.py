@@ -20,10 +20,10 @@ class TableParser:
                 clas -= 1
 
             for day in range(4, 25, 5):
-                # date = self.sheet.cell(day, 1).value.strftime('%d.%m')
-                date = self.sheet.cell(day, 1).value.split()[0]
-                if len(date) == 4:
-                    date = '0' + date
+                date = self.sheet.cell(day, 1).value.strftime('%d.%m')
+                # date = self.sheet.cell(day, 1).value.split()[0]
+                # if len(date) == 4:
+                #     date = '0' + date
                 for row in range(day, day + 5):
 
                     merged = False  # true - общая пара; false - по группам
