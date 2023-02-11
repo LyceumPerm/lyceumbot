@@ -185,6 +185,7 @@ async def get_by_button(callback: types.CallbackQuery):
 
 @dp.message_handler(commands=['start'])
 async def start(message: types.Message):
+    """Starts dialog"""
     await log(message)
 
     tg_id = message.from_user.id
@@ -205,6 +206,7 @@ async def start(message: types.Message):
 
 @dp.message_handler(commands=['help'])
 async def get_help(message: types.Message):
+    """Sends message with main info."""
     await log(message)
 
     await message.answer(texts.HELP, parse_mode='HTML')
@@ -212,6 +214,7 @@ async def get_help(message: types.Message):
 
 @dp.message_handler(commands=['get'])
 async def get(message: types.Message):
+    """Sends the keyboard to select date."""
     await log(message)
     if not await process_checks(message.from_user.id):
         return
@@ -225,6 +228,8 @@ async def get(message: types.Message):
 
 @dp.message_handler(commands=['class'])
 async def get_for_class(message: types.Message):
+    """Starts a dialog for viewing schedule for whole class.
+    Sends the keyboard to select date."""
     await log(message)
     if not await process_checks(message.from_user.id):
         return
@@ -234,6 +239,7 @@ async def get_for_class(message: types.Message):
 
 @dp.message_handler(commands=['link'])
 async def link(message: types.Message):
+    """Sends actual link to google table with schedule."""
     await log(message)
     if not await process_checks(message.from_user.id):
         return
@@ -245,6 +251,7 @@ async def link(message: types.Message):
 
 @dp.message_handler(commands=['list'])
 async def get_days_list(message: types.Message):
+    """Sends list of days available for viewing."""
     await log(message)
     if not await process_checks(message.from_user.id):
         return
@@ -257,6 +264,7 @@ async def get_days_list(message: types.Message):
 
 @dp.message_handler(commands=['setclass'])
 async def set_class(message: types.Message):
+    """Sends keyboard to select new class."""
     await log(message)
     if not await process_checks(message.from_user.id):
         return
@@ -266,6 +274,7 @@ async def set_class(message: types.Message):
 
 @dp.message_handler(commands=['setgroup'])
 async def set_group(message: types.Message):
+    """Sends keyboard to select new group."""
     await log(message)
     if not await process_checks(message.from_user.id):
         return
@@ -279,6 +288,9 @@ async def set_group(message: types.Message):
 
 @dp.message_handler(commands=['t', 'teacher'])
 async def teacher(message: types.Message):
+    """Starts a dialog for viewing the teacher's schedule.
+    Sends the keyboard to select the teacher."""
+
     await log(message)
     if not await process_checks(message.from_user.id, signup=False):
         return
@@ -297,6 +309,7 @@ async def settings(message: types.Message):
 
 @dp.message_handler(commands=['bells'])
 async def bells(message: types.Message):
+    """Sends image with bells timetable."""
     await log(message)
     if not await process_checks(message.from_user.id):
         return
@@ -307,6 +320,7 @@ async def bells(message: types.Message):
 
 @dp.message_handler(commands=['about'])
 async def about(message: types.Message):
+    """Sends the 'about' message."""
     await log(message)
     if not await process_checks(message.from_user.id):
         return
@@ -316,6 +330,7 @@ async def about(message: types.Message):
 
 @dp.message_handler(commands=['formats'])
 async def formats(message: types.Message):
+    """Sends message with query formats."""
     await log(message)
     if not await process_checks(message.from_user.id):
         return
@@ -325,7 +340,7 @@ async def formats(message: types.Message):
 
 @dp.message_handler(commands=['delete'])
 async def delete(message: types.Message):
-    """Deletes user from Database"""
+    """Deletes user from Database."""
     await log(message)
 
     user_db.delete_user(message.from_user.id)
@@ -422,6 +437,7 @@ async def process_messages(message: types.Message):
 # UTIL FUNCTIONS
 
 async def log(data: types.Message | types.CallbackQuery, teacher_name: str = False):
+    """Logs messages and callbacks."""
     user_info = f'id: {data.from_user.id}, first_name: {data.from_user.first_name}, ' \
                 f'last_name: {data.from_user.last_name}, username: {data.from_user.username}'
 
@@ -435,6 +451,17 @@ async def log(data: types.Message | types.CallbackQuery, teacher_name: str = Fal
 
 
 async def get_schedule(date: str, clas_number: int, clas_profile: str) -> str:
+    """Returns the text with schedule for whole class.
+
+    For example,
+        11линг2 • 15.02
+
+        1. ЭК "Англ.гов страны" (Соболева Т.И.)   [111]
+        2. Англ.язык (Вавилин А.С.) [306]
+            Англ.язык (Соболева Т.И.) [119]
+        3. Обществознание (Чернышев А.Ю.)   [108]
+        4. ✖️
+    """
     if clas_profile not in PROFILES:
         raise ClasException
 
@@ -482,6 +509,16 @@ async def get_schedule(date: str, clas_number: int, clas_profile: str) -> str:
 
 
 async def get_schedule_for_group(date: str, clas_number: int, clas_profile: str, group: int) -> str:
+    """Returns the text with schedule for the selected class group.
+
+        For example,
+            10исс2 • группа 1 • 16.02
+
+            1. ✖️
+            2. Родной язык (Ильина Н.С.)   [112]
+            3. ОБЖ (Бушин В.Н.)   [305]
+            4. Математика (Мартилова Н.Л.)   [204]
+    """
     if clas_profile not in PROFILES:
         raise ClasException
     if group not in [1, 2]:
@@ -506,10 +543,20 @@ async def get_schedule_for_group(date: str, clas_number: int, clas_profile: str,
     return result_text
 
 
-# если не прошли проверки - возвращает False
-async def process_checks(id, signup=True, spam=False, user_exists=True):
-    if user_exists and not user_db.user_exists(id):
-        await bot.send_message(id, texts.SWW_ERROR)
+async def process_checks(tg_id: int, signup: bool = True, spam: bool = False, user_exists: bool = True) -> bool:
+    """Performs checks based on the passed parameters.
+
+    Args:
+        tg_id: telegram user id.
+        signup: check if user has class and group.
+        user_exists: check if user exists.
+        spam: check if user spams.
+
+    Returns:
+        True if checks are passed, False otherwise.
+    """
+    if user_exists and not user_db.user_exists(tg_id):
+        await bot.send_message(tg_id, texts.SWW_ERROR)
         return
     if signup and spam:
         return await check_signup(id) and await check_spam(id)
@@ -544,6 +591,7 @@ async def check_spam(id):
 
 
 async def is_on_update():
+    """Return True if table is updating now, False otherwise"""
     schedule = schedule_db.get_for_group(available_days[-1], 11, 'эк', 2)
     return len(schedule) != 5
 
