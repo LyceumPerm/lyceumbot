@@ -20,10 +20,13 @@ class TableParser:
                 clas -= 1
 
             for day in range(4, 25, 5):
-                date = self.sheet.cell(day, 1).value.strftime('%d.%m')
-                # date = self.sheet.cell(day, 1).value.split()[0]
-                # if len(date) == 4:
-                #     date = '0' + date
+                try:
+                    date = self.sheet.cell(day, 1).value.strftime('%d.%m')
+                except AttributeError:
+                    date = self.sheet.cell(day, 1).value.split()[0]
+                    if len(date) == 4:
+                        date = '0' + date
+
                 for row in range(day, day + 5):
 
                     merged = False  # true - общая пара; false - по группам
@@ -81,11 +84,17 @@ class TableParser:
                         teacher2 = self.format_name(teacher2)
 
                         if self.sheet.cell(row, clas).font.strikethrough:
-                            subject1 = '<s>' + subject1 + '</s>'
-                            teacher1 = '<s>' + teacher1 + '</s>'
+                            try:
+                                subject1 = '<s>' + subject1 + '</s>'
+                                teacher1 = '<s>' + teacher1 + '</s>'
+                            except:
+                                pass
                         if self.sheet.cell(row, clas + 1).font.strikethrough:
-                            subject2 = '<s>' + subject2 + '</s>'
-                            teacher2 = '<s>' + teacher2 + '</s>'
+                            try:
+                                subject2 = '<s>' + subject2 + '</s>'
+                                teacher2 = '<s>' + teacher2 + '</s>'
+                            except:
+                                pass
 
                         classrooms = [classroom, classroom]
                         if '/' in classroom and classroom.lower() not in ['сп/з', 'с/з', 'а/з', 'акт/з', 'сп/зал',
