@@ -20,12 +20,11 @@ class TableParser:
                 clas -= 1
 
             for day in range(4, 25, 5):
-                try:
-                    date = self.sheet.cell(day, 1).value.strftime('%d.%m')
-                except AttributeError:
-                    date = self.sheet.cell(day, 1).value.split()[0]
-                    if len(date) == 4:
-                        date = '0' + date
+                date = self.sheet.cell(day, 1).value.strftime('%d.%m')
+
+                # баг в таблице
+                if date == '02.02':
+                    date = '02.03'
 
                 for row in range(day, day + 5):
 
@@ -57,8 +56,11 @@ class TableParser:
                         teacher = self.format_name(teacher)
 
                         if self.sheet.cell(row, clas).font.strikethrough:
-                            subject = '<s>' + subject + '</s>'
-                            teacher = '<s>' + teacher + '</s>'
+                            try:
+                                subject = '<s>' + subject + '</s>'
+                                teacher = '<s>' + teacher + '</s>'
+                            except:
+                                pass
 
                         self.schedule_db.save(date, number, subject, teacher, class_number, class_profile, 1, classroom)
                         self.schedule_db.save(date, number, subject, teacher, class_number, class_profile, 2, classroom)
