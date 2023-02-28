@@ -90,7 +90,7 @@ async def select_teacher(callback: types.CallbackQuery):
 
 
 @dp.callback_query_handler(text=['teachers_prev', 'teachers_next'])
-async def change_teacher_list(callback: types.CallbackQuery):
+async def change_teacher_page(callback: types.CallbackQuery):
     await log(callback)
 
     tg_id = callback.from_user.id
@@ -139,10 +139,10 @@ async def get_teacher_schedule(callback: types.CallbackQuery):
     await callback.answer()
 
 
-# TODO нормальные имена для функций
 @dp.callback_query_handler(text=list(map(lambda item: item + 'c', available_days[-5:])))
-async def select_class1(callback: types.CallbackQuery):
+async def get_class_list(callback: types.CallbackQuery):
     tg_id = callback.from_user.id
+    await log(callback)
     await callback.answer()
 
     await bot.send_message(tg_id, f'День: {callback.data[:-1]}\nВыберите класс с помощью кнопок ниже',
@@ -150,7 +150,8 @@ async def select_class1(callback: types.CallbackQuery):
 
 
 @dp.callback_query_handler(text=list(map(lambda item: item + 'c', CLASSES)))
-async def get_for_class(callback: types.CallbackQuery):
+async def get_class_schedule(callback: types.CallbackQuery):
+    await log(callback)
     tg_id = callback.from_user.id
     await callback.answer()
 
@@ -435,9 +436,6 @@ async def log(data: types.Message | types.CallbackQuery, teacher_name: str = Fal
 
 
 async def get_schedule(date: str, clas_number: int, clas_profile: str) -> str:
-    if await check_date(date):
-        return texts.REST_DAY
-
     if clas_profile not in PROFILES:
         raise ClasException
 
@@ -485,8 +483,6 @@ async def get_schedule(date: str, clas_number: int, clas_profile: str) -> str:
 
 
 async def get_schedule_for_group(date: str, clas_number: int, clas_profile: str, group: int) -> str:
-    if await check_date(date):
-        return texts.REST_DAY
     if clas_profile not in PROFILES:
         raise ClasException
     if group not in [1, 2]:
@@ -546,10 +542,6 @@ async def check_spam(id):
 
     user_db.set_lastmessage(id, now)
     return True
-
-
-async def check_date(date):
-    return date in ['23.02', '24.02']
 
 
 async def is_on_update():
