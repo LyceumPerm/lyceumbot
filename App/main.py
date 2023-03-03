@@ -436,6 +436,9 @@ async def log(data: types.Message | types.CallbackQuery, teacher_name: str = Fal
 
 
 async def get_schedule(date: str, clas_number: int, clas_profile: str) -> str:
+    if await check_date(date):
+        return texts.REST_DAY
+
     if clas_profile not in PROFILES:
         raise ClasException
 
@@ -483,6 +486,8 @@ async def get_schedule(date: str, clas_number: int, clas_profile: str) -> str:
 
 
 async def get_schedule_for_group(date: str, clas_number: int, clas_profile: str, group: int) -> str:
+    if await check_date(date):
+        return texts.REST_DAY
     if clas_profile not in PROFILES:
         raise ClasException
     if group not in [1, 2]:
@@ -542,6 +547,10 @@ async def check_spam(id):
 
     user_db.set_lastmessage(id, now)
     return True
+
+
+async def check_date(date):
+    return date in ['08.03']
 
 
 async def is_on_update():
