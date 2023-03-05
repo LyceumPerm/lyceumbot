@@ -113,6 +113,11 @@ async def get_teacher_schedule(callback: types.CallbackQuery):
         return
 
     date = callback.data[:-1]
+    if await check_date(date):
+        await bot.send_message(callback.from_user.id, texts.REST_DAY)
+        await callback.answer()
+        return
+
     teacher_name = callback.message.text[callback.message.text.index(':') + 2: callback.message.text.index('\n')]
     schedule = schedule_db.get_teacher(date, teacher_name)
 
