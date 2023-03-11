@@ -555,7 +555,7 @@ async def check_spam(id):
 
 
 async def check_date(date):
-    return date in ['08.03']
+    return date in ['17.03']
 
 
 async def is_on_update():
