@@ -564,4 +564,4 @@ async def is_on_update():
 
 
 if __name__ == '__main__':
-    executor.start_polling(dp)
+    executor.start_polling(dp, skip_updates=False)
