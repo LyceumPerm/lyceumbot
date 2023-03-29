@@ -42,7 +42,7 @@ async def set_class_number(callback: types.CallbackQuery):
     await bot.edit_message_text(texts.GET_CLASS, tg_id, callback.message.message_id, reply_markup=func)
     user_db.set_state(tg_id, 1)
 
-    user_db.set_clas_number(tg_id, int(callback.data))
+    user_db.set_class_number(tg_id, int(callback.data))
     await callback.answer()
 
 
@@ -56,8 +56,8 @@ async def set_class_profile(callback: types.CallbackQuery):
                                 reply_markup=keyboards.select_group())
     user_db.set_state(tg_id, 2)
 
-    user_db.set_clas_number(tg_id, int(callback.data[:2]))
-    user_db.set_clas_profile(tg_id, callback.data[2:])
+    user_db.set_class_number(tg_id, int(callback.data[:2]))
+    user_db.set_class_profile(tg_id, callback.data[2:])
     await callback.answer()
 
 
@@ -119,7 +119,7 @@ async def get_teacher_schedule(callback: types.CallbackQuery):
         return
 
     teacher_name = callback.message.text[callback.message.text.index(':') + 2: callback.message.text.index('\n')]
-    schedule = schedule_db.get_teacher(date, teacher_name)
+    schedule = schedule_db.get_for_teacher(date, teacher_name)
 
     await log(callback, teacher_name=teacher_name)
 
@@ -179,8 +179,8 @@ async def get_by_button(callback: types.CallbackQuery):
         await callback.answer(show_alert=False)
         return
     try:
-        schedule = await get_schedule_for_group(callback.data, user_db.get_clas_number(tg_id),
-                                                user_db.get_clas_profile(tg_id), user_db.get_group(tg_id))
+        schedule = await get_schedule_for_group(callback.data, user_db.get_class_number(tg_id),
+                                                user_db.get_class_profile(tg_id), user_db.get_group(tg_id))
         await callback.message.answer(schedule, parse_mode='HTML')
     except ParsingProcessException:
         await callback.message.answer(texts.TABLE_UPDATING_ERROR)
@@ -372,8 +372,8 @@ async def process_messages(message: types.Message):
             if not await process_checks(tg_id, signup=False, spam=True):
                 return
 
-        clas_number = user_db.get_clas_number(tg_id)
-        clas_profile = user_db.get_clas_profile(tg_id)
+        clas_number = user_db.get_class_number(tg_id)
+        clas_profile = user_db.get_class_profile(tg_id)
         group = user_db.get_group(tg_id)
 
         if message_text.startswith('/get'):

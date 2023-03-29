@@ -44,22 +44,22 @@ class UserTable:
         self.cur.execute(query, (state, telegram_id))
         self.con.commit()
 
-    def get_clas_number(self, telegram_id):
+    def get_class_number(self, telegram_id):
         query = 'SELECT clas_number FROM user WHERE telegram_id = ?;'
         result = self.cur.execute(query, (telegram_id,)).fetchone()
         return result[0]
 
-    def set_clas_number(self, telegram_id, clas_number):
+    def set_class_number(self, telegram_id, clas_number):
         query = 'UPDATE user SET clas_number = ? WHERE telegram_id = ?;'
         self.cur.execute(query, (clas_number, telegram_id))
         self.con.commit()
 
-    def get_clas_profile(self, telegram_id):
+    def get_class_profile(self, telegram_id):
         query = 'SELECT name FROM profile WHERE id = (SELECT profile_id FROM user WHERE telegram_id = ?);'
         result = self.cur.execute(query, (telegram_id,)).fetchone()
         return result[0]
 
-    def set_clas_profile(self, telegram_id, clas_profile):
+    def set_class_profile(self, telegram_id, clas_profile):
         query = 'UPDATE user SET profile_id = (SELECT id FROM profile WHERE name = ?) WHERE telegram_id = ?;'
         self.cur.execute(query, (clas_profile, telegram_id))
         self.con.commit()
@@ -105,7 +105,7 @@ class ScheduleTable:
         query = 'SELECT * FROM schedule WHERE date = ? and clas_number = ? and profile_id = ? and "group" = ? ORDER BY number;'
         return self.cur.execute(query, (date, clas_number, clas_profile, group)).fetchall()
 
-    def get_teacher(self, date: str, teacher: str):
+    def get_for_teacher(self, date: str, teacher: str):
         query = 'SELECT * FROM schedule WHERE date = ? and teacher = ? ORDER BY number;'
         return self.cur.execute(query, (date, teacher)).fetchall()
 
