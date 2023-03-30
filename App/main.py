@@ -144,27 +144,27 @@ async def get_teacher_schedule(callback: types.CallbackQuery):
     await callback.answer()
 
 
-@dp.callback_query_handler(text=list(map(lambda item: item + 'c', available_days[-5:])))
+@dp.callback_query_handler(text=list(map(lambda item: item + 'c', CLASSES)))
 async def get_class_list(callback: types.CallbackQuery):
-    tg_id = callback.from_user.id
     await log(callback)
+    tg_id = callback.from_user.id
+
+    await bot.edit_message_text(f'Класс: {callback.data[:-1]}\nВыберите день с помощью кнопок ниже:', tg_id,
+                                callback.message.message_id, reply_markup=keyboards.select_day_for_class())
     await callback.answer()
 
-    await bot.send_message(tg_id, f'День: {callback.data[:-1]}\nВыберите класс с помощью кнопок ниже',
-                           reply_markup=keyboards.select_class())
 
-
-@dp.callback_query_handler(text=list(map(lambda item: item + 'c', CLASSES)))
+@dp.callback_query_handler(text=list(map(lambda item: item + 'c', available_days[-5:])))
 async def get_class_schedule(callback: types.CallbackQuery):
     await log(callback)
     tg_id = callback.from_user.id
-    await callback.answer()
 
-    date = callback.message.text[6:11]
-    class_number = callback.data[:2]
-    class_profile = callback.data[2:-1]
+    date = callback.data[:-1]
+    class_number = int(callback.message.text[7:9])
+    class_profile = callback.message.text[9:callback.message.text.find('\n')]
 
     await bot.send_message(tg_id, await get_schedule(date, class_number, class_profile), parse_mode='HTML')
+    await callback.answer()
 
 
 @dp.callback_query_handler()
@@ -232,16 +232,16 @@ async def get(message: types.Message):
 @dp.message_handler(commands=['class'])
 async def get_for_class(message: types.Message):
     await log(message)
-    if not await process_checks(message.from_user.id):
+    if not await process_checks(message.from_user.id, signup=False):
         return
 
-    await message.answer('Выберите дату с помощью кнопок ниже:', reply_markup=keyboards.select_day_for_class())
+    await message.answer('Выберите класс с помощью кнопок ниже:', reply_markup=keyboards.select_class())
 
 
 @dp.message_handler(commands=['link'])
 async def link(message: types.Message):
     await log(message)
-    if not await process_checks(message.from_user.id):
+    if not await process_checks(message.from_user.id, signup=False):
         return
 
     # я так и не решил, какой вариант лучше
