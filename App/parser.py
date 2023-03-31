@@ -20,6 +20,11 @@ class TableParser:
                 clas -= 1
 
             for day in range(4, 25, 5):
+
+                # лишняя строка в таблице после понедельника, поэтому инкрементируем day
+                if day > 4:
+                    day += 1
+
                 date = self.sheet.cell(day, 1).value.strftime('%d.%m')
 
                 for row in range(day, day + 5):
