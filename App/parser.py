@@ -1,6 +1,6 @@
 from openpyxl import load_workbook
 
-from constants import CURRENT_TABLE, CURRENT_FILE, available_days, alt_teachers, alt_profiles
+from constants import CURRENT_TABLE, alt_teachers, alt_profiles
 from database import ScheduleTable
 
 
@@ -44,6 +44,8 @@ class TableParser:
                     classroom = str(self.sheet.cell(row, clas + 2).value)
                     if classroom.endswith('.0'):
                         classroom = classroom[:-2]
+
+                    self.schedule_db.delete(date, number, class_number, class_profile)
 
                     if merged:
                         text = self.sheet.cell(row, clas).value
@@ -115,16 +117,6 @@ class TableParser:
         name = name.replace('.', '').replace(' ', '')
         return f'{name[:-2]} {name[-2]}.{name[-1]}.'
 
-    def clear(self, days_to_delete):
-        self.schedule_db.clear(days_to_delete)
-
     def __del__(self):
         self.wb.close()
         self.schedule_db.con.close()
-
-
-if __name__ == '__main__':
-    parser = TableParser(f'resources/schedule/{CURRENT_FILE}')
-    parser.clear(available_days[-5:])
-    parser.parse()
-    parser.__del__()

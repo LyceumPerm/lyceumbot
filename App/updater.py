@@ -20,7 +20,6 @@ def update_table():
 
     wget.download(GOOGLETABLE_URL, local_filename)
     parser = TableParser(local_filename)
-    parser.clear(available_days[-5:])
     parser.parse()
     parser.__del__()
 

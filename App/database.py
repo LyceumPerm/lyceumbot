@@ -95,6 +95,11 @@ class ScheduleTable:
         self.cur.execute(query, (date, number, name, teacher, clas_number, clas_profile, group, classroom))
         self.con.commit()
 
+    def delete(self, date: str, number: int, class_number: int, class_profile: str):
+        query = 'DELETE FROM schedule WHERE "date" = ? AND "number" = ? AND class_number = ? AND class_profile = (SELECT id FROM profile WHERE name = ?)'
+        self.cur.execute(query, (date, number, class_number, class_profile))
+        self.con.commit()
+
     def get(self, date: str, clas_number: int, clas_profile: str):
         clas_profile = self.cur.execute('SELECT id FROM profile WHERE name = ?', (clas_profile,)).fetchone()[0]
         query = 'SELECT * FROM schedule WHERE date = ? and class_number = ? and class_profile = ? ORDER BY number;'
