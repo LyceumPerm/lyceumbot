@@ -4,7 +4,7 @@ import os
 
 import wget
 
-from constants import GOOGLETABLE_URL, CURRENT_FILE, available_days
+from configuration import GOOGLETABLE_URL, CURRENT_FILE, AVAILABLE_DAYS
 from parser import TableParser
 
 local_filename = f'resources/schedule/{CURRENT_FILE}'

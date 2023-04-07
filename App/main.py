@@ -6,7 +6,7 @@ from aiogram import Bot, Dispatcher, executor, types
 
 from exceptions import ClasException, GroupException, DateException, ParsingProcessException
 from database import UserTable, ScheduleTable
-from constants import TOKEN, SPAM_RESTRICTION, CLASSES, PROFILES, LINK, alt_profiles, available_days, teachers
+from configuration import TOKEN, SPAM_RESTRICTION, CLASSES, PROFILES, LINK, ALT_PROFILES, AVAILABLE_DAYS, TEACHERS
 import texts
 import keyboards
 
@@ -74,7 +74,7 @@ async def set_group(callback: types.CallbackQuery):
     await bot.send_message(tg_id, texts.HELP)
 
 
-@dp.callback_query_handler(text=teachers)
+@dp.callback_query_handler(text=TEACHERS)
 async def select_teacher(callback: types.CallbackQuery):
     await log(callback)
 
@@ -104,7 +104,7 @@ async def change_teacher_page(callback: types.CallbackQuery):
     await callback.answer()
 
 
-@dp.callback_query_handler(text=list(map(lambda item: item + 't', available_days)))
+@dp.callback_query_handler(text=list(map(lambda item: item + 't', AVAILABLE_DAYS)))
 async def get_teacher_schedule(callback: types.CallbackQuery):
     tg_id = callback.from_user.id
     if await is_on_update():
@@ -154,7 +154,7 @@ async def get_class_list(callback: types.CallbackQuery):
     await callback.answer()
 
 
-@dp.callback_query_handler(text=list(map(lambda item: item + 'c', available_days[-5:])))
+@dp.callback_query_handler(text=list(map(lambda item: item + 'c', AVAILABLE_DAYS[-5:])))
 async def get_class_schedule(callback: types.CallbackQuery):
     await log(callback)
     tg_id = callback.from_user.id
@@ -256,8 +256,8 @@ async def get_days_list(message: types.Message):
         return
 
     answer_text = 'Список доступных дней:\n\n'
-    for i in range(0, len(available_days), 5):
-        answer_text += ' '.join(available_days[i: i + 5]) + '\n'
+    for i in range(0, len(AVAILABLE_DAYS), 5):
+        answer_text += ' '.join(AVAILABLE_DAYS[i: i + 5]) + '\n'
     await message.answer(answer_text)
 
 
@@ -404,11 +404,11 @@ async def process_messages(message: types.Message):
             await message.answer(texts.FORMATS, parse_mode='HTML')
             return
 
-        if clas_profile in alt_profiles:
-            clas_profile = alt_profiles[clas_profile]
+        if clas_profile in ALT_PROFILES:
+            clas_profile = ALT_PROFILES[clas_profile]
 
         try:
-            if date not in available_days:
+            if date not in AVAILABLE_DAYS:
                 raise DateException()
 
             schedule = await get_schedule_for_group(date, clas_number, clas_profile, group)
@@ -559,7 +559,7 @@ async def check_date(date):
 
 
 async def is_on_update():
-    schedule = schedule_db.get_for_group(available_days[-1], 11, 'эк', 2)
+    schedule = schedule_db.get_for_group(AVAILABLE_DAYS[-1], 11, 'эк', 2)
     return len(schedule) != 5
 
 

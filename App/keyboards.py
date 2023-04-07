@@ -1,4 +1,4 @@
-from constants import CLASSES, available_days, teachers
+from configuration import CLASSES, AVAILABLE_DAYS, TEACHERS
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 
@@ -49,7 +49,7 @@ def select_group():
 
 
 def select_day():
-    days = available_days[-5:]
+    days = AVAILABLE_DAYS[-5:]
     buttons = [[InlineKeyboardButton(day, callback_data=day) for day in days]]
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
@@ -57,7 +57,7 @@ def select_day():
 
 
 def select_day_for_class():
-    days = available_days[-5:]
+    days = AVAILABLE_DAYS[-5:]
     buttons = [[InlineKeyboardButton(day, callback_data=day + 'c') for day in days]]
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
@@ -68,9 +68,9 @@ def select_teacher_part1():
     buttons = []
     for i in range(0, 24, 3):
         buttons.append(
-            [InlineKeyboardButton(teachers[i], callback_data=teachers[i]),
-             InlineKeyboardButton(teachers[i + 1], callback_data=teachers[i + 1]),
-             InlineKeyboardButton(teachers[i + 2], callback_data=teachers[i + 2])]
+            [InlineKeyboardButton(TEACHERS[i], callback_data=TEACHERS[i]),
+             InlineKeyboardButton(TEACHERS[i + 1], callback_data=TEACHERS[i + 1]),
+             InlineKeyboardButton(TEACHERS[i + 2], callback_data=TEACHERS[i + 2])]
         )
     buttons.append(
         [InlineKeyboardButton('ℹ Страница: 1', callback_data='None'),
@@ -83,9 +83,9 @@ def select_teacher_part2():
     buttons = []
     for i in range(24, 48, 3):
         buttons.append(
-            [InlineKeyboardButton(teachers[i], callback_data=teachers[i]),
-             InlineKeyboardButton(teachers[i + 1], callback_data=teachers[i + 1]),
-             InlineKeyboardButton(teachers[i + 2], callback_data=teachers[i + 2])]
+            [InlineKeyboardButton(TEACHERS[i], callback_data=TEACHERS[i]),
+             InlineKeyboardButton(TEACHERS[i + 1], callback_data=TEACHERS[i + 1]),
+             InlineKeyboardButton(TEACHERS[i + 2], callback_data=TEACHERS[i + 2])]
         )
     buttons.append(
         [InlineKeyboardButton('ℹ Страница: 2', callback_data='None'),
@@ -96,7 +96,7 @@ def select_teacher_part2():
 
 # select day for teacher
 def select_tday():
-    days = available_days[-5:]
+    days = AVAILABLE_DAYS[-5:]
     buttons = [[InlineKeyboardButton(day, callback_data=day + 't') for day in days]]
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)

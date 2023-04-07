@@ -1,6 +1,6 @@
 from openpyxl import load_workbook
 
-from constants import CURRENT_TABLE, alt_teachers, alt_profiles
+from configuration import CURRENT_TABLE, ALT_TEACHERS, ALT_PROFILES
 from database import ScheduleTable
 
 
@@ -32,8 +32,8 @@ class TableParser:
                     table_class = self.sheet.cell(2, clas).value
                     class_number = table_class[:2]
                     class_profile = table_class[2:].lower()
-                    if class_profile in alt_profiles:
-                        class_profile = alt_profiles[class_profile]
+                    if class_profile in ALT_PROFILES:
+                        class_profile = ALT_PROFILES[class_profile]
 
                     number = row - day + 1
                     classroom = str(self.sheet.cell(row, clas + 2).value)
@@ -107,8 +107,8 @@ class TableParser:
     def format_name(self, name: str) -> str:
         if len(name) < 3:
             return name
-        if name.lower() in alt_teachers:
-            name = alt_teachers[name.lower()]
+        if name.lower() in ALT_TEACHERS:
+            name = ALT_TEACHERS[name.lower()]
         name = name.replace('.', '').replace(' ', '')
         return f'{name[:-2]} {name[-2]}.{name[-1]}.'
 
