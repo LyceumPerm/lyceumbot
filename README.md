@@ -17,7 +17,7 @@
 > 
 > Бот регулярно обновляет данные в автоматическом режиме, поэтому вы не пропустите изменения в расписании
 
-![promo images](https://i.ibb.co/Hq08S5H/Readme.png)
+![promo images](https://i.ibb.co/2nK6Lhb/Readme.png)
 
 ## Основные возможности
 
