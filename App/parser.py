@@ -13,11 +13,9 @@ class TableParser:
     def parse(self):
         merged_cells = self.sheet.merged_cells
 
-        for clas in range(3, 76, 3):
-            if clas == 39:
+        for clas in range(4, 77, 3):
+            if clas == 40:
                 continue
-            if clas > 39:
-                clas -= 1
 
             for day in range(4, 25, 5):
                 # лишняя строка в таблице после понедельника -> инкрементируем day
