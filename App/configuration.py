@@ -3,13 +3,13 @@ SPAM_RESTRICTION = 0  # seconds
 
 GOOGLETABLE_ID = '1tGbeevMu_7_n_pKDFjH3cNFNigClVW3v'
 GOOGLETABLE_URL = f'https://docs.google.com/spreadsheets/d/{GOOGLETABLE_ID}/export?exportFormat=xlsx'
-LINK = 'https://docs.google.com/spreadsheets/d/1tGbeevMu_7_n_pKDFjH3cNFNigClVW3v/edit#gid=355900785'
-CURRENT_TABLE = '24.04-28.04 неделя1'
-CURRENT_FILE = '24.04week.xlsx'
+LINK = 'https://docs.google.com/spreadsheets/d/1tGbeevMu_7_n_pKDFjH3cNFNigClVW3v/edit#gid=2140548339'
+CURRENT_TABLE = '2.05 - 5.05 2 неделя'
+CURRENT_FILE = '01.05week.xlsx'
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-AVAILABLE_DAYS = ['24.04', '25.04', '26.04', '27.04', '28.04']
+AVAILABLE_DAYS = ['01.05', '02.05', '03.05', '04.05', '05.05']
 
 CLASSES = ['10био', '10геохим', '10исс1', '10исс2', '10линг1', '10линг2', '10мат', '10матэк', '10мед', '10фил',
            '10фм', '10эк', '11био', '11биохим', '11гео', '11исс', '11линг1', '11линг2', '11мат1', '11мат2', '11мед',

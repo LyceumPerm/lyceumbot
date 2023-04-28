@@ -20,7 +20,10 @@ class TableParser:
                 clas -= 1
 
             for day in range(4, 25, 5):
-                date = self.sheet.cell(day, 1).value.strftime('%d.%m')
+                try:
+                    date = self.sheet.cell(day, 1).value.strftime('%d.%m')
+                except:
+                    date = '01.05'
 
                 for row in range(day, day + 5):
 
