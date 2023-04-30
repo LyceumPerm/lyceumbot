@@ -1,4 +1,5 @@
-from app.config import CLASSES, AVAILABLE_DAYS
+from app.config import AVAILABLE_DAYS
+from app.util.constants import CLASSES
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 

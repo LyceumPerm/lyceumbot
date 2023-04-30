@@ -4,22 +4,21 @@ import os
 
 import wget
 
-from app.config import GOOGLETABLE_URL, CURRENT_FILE
+from app.config import URL, SCHEDULE_PATH, UPDATES_LOG_PATH
 from .parser import TableParser
 
-local_filename = f'app/resources/schedule/{CURRENT_FILE}'
-update_logger = open('app/logs/updates.log', 'a', encoding='utf8')
+update_logger = open(UPDATES_LOG_PATH, 'a', encoding='utf8')
 
 
 def update_table():
-    if os.path.isfile(local_filename):
-        os.remove(local_filename)
+    if os.path.isfile(SCHEDULE_PATH):
+        os.remove(SCHEDULE_PATH)
 
     update_logger.write(str(datetime.datetime.now()) + '\n')
     update_logger.flush()
 
-    wget.download(GOOGLETABLE_URL, local_filename)
-    parser = TableParser(local_filename)
+    wget.download(URL + '/export?exportFormat=xlsx', SCHEDULE_PATH)
+    parser = TableParser(SCHEDULE_PATH)
     parser.parse()
     parser.__del__()
 

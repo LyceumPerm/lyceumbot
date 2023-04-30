@@ -1,4 +1,3 @@
-import random
 import re
 import datetime
 
@@ -6,15 +5,16 @@ from aiogram import Bot, Dispatcher, executor, types
 
 from app.util.exceptions import *
 from app.data.database import UserTable, ScheduleTable
-from app.config import TOKEN, SPAM_RESTRICTION, PROFILES, LINK, ALT_PROFILES
-import app.util.texts as texts
+from app.config import TOKEN, SPAM_RESTRICTION, URL, MESSAGES_LOG_PATH
+from app.util.constants import PROFILES, ALT_PROFILES
 from app.keyboards.classes import *
 from app.keyboards.teacher import *
+import app.util.texts as texts
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher(bot)
 
-message_logger = open('app/logs/messages.log', 'a', encoding='utf8')
+message_logger = open(MESSAGES_LOG_PATH, 'a', encoding='utf8')
 user_db = UserTable()
 schedule_db = ScheduleTable()
 
@@ -245,9 +245,7 @@ async def link(message: types.Message):
     if not await process_checks(message.from_user.id, signup=False):
         return
 
-    # я так и не решил, какой вариант лучше
-    answer_text = random.choice(['Ссылка на актуальное расписание:', 'Актуальная ссылка на расписание:']) + '\n' + LINK
-    await message.answer(answer_text, disable_web_page_preview=True)
+    await message.answer('Ссылка на таблицу с расписанием:\n' + URL, disable_web_page_preview=True)
 
 
 @dp.message_handler(commands=['list'])

@@ -1,6 +1,7 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-from app.config import AVAILABLE_DAYS, TEACHERS
+from app.config import AVAILABLE_DAYS
+from app.util.constants import TEACHERS
 
 
 # select day for teacher
