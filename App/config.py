@@ -1,4 +1,4 @@
-TOKEN = ''  # telegram bot token
+TOKEN = '5966731724:AAH5UJqOiw_kDLQ8Yy50y-vjUTmZ0-fQdOQ'  # telegram bot token
 SPAM_RESTRICTION = 0  # seconds
 
 GOOGLETABLE_ID = '1tGbeevMu_7_n_pKDFjH3cNFNigClVW3v'

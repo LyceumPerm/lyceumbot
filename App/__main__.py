@@ -4,16 +4,17 @@ import datetime
 
 from aiogram import Bot, Dispatcher, executor, types
 
-from exceptions import ClasException, GroupException, DateException, ParsingProcessException
-from database import UserTable, ScheduleTable
-from configuration import TOKEN, SPAM_RESTRICTION, CLASSES, PROFILES, LINK, ALT_PROFILES, AVAILABLE_DAYS, TEACHERS
-import texts
-import keyboards
+from app.util.exceptions import *
+from app.data.database import UserTable, ScheduleTable
+from app.config import TOKEN, SPAM_RESTRICTION, PROFILES, LINK, ALT_PROFILES
+import app.util.texts as texts
+from app.keyboards.classes import *
+from app.keyboards.teacher import *
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher(bot)
 
-message_logger = open('logs/messages.log', 'a', encoding='utf8')
+message_logger = open('app/logs/messages.log', 'a', encoding='utf8')
 user_db = UserTable()
 schedule_db = ScheduleTable()
 
@@ -38,7 +39,7 @@ async def set_class_number(callback: types.CallbackQuery):
 
     tg_id = callback.from_user.id
 
-    func = keyboards.select_10_profile() if callback.data == '10' else keyboards.select_11_profile()
+    func = select_10_profile() if callback.data == '10' else select_11_profile()
     await bot.edit_message_text(texts.GET_CLASS, tg_id, callback.message.message_id, reply_markup=func)
     user_db.set_state(tg_id, 1)
 
@@ -53,7 +54,7 @@ async def set_class_profile(callback: types.CallbackQuery):
     tg_id = callback.from_user.id
 
     await bot.edit_message_text(texts.GET_GROUP, tg_id, callback.message.message_id,
-                                reply_markup=keyboards.select_group())
+                                reply_markup=select_group())
     user_db.set_state(tg_id, 2)
 
     user_db.set_class_number(tg_id, int(callback.data[:2]))
@@ -85,7 +86,7 @@ async def select_teacher(callback: types.CallbackQuery):
 
     await bot.edit_message_text(texts.TEACHER_WARNING, tg_id, callback.message.message_id, parse_mode='HTML')
     await bot.send_message(tg_id, f'Преподаватель: {callback.data}\n{texts.SELECT_TDATE}',
-                           reply_markup=keyboards.select_tday(), parse_mode='HTML')
+                           reply_markup=select_day_for_teacher(), parse_mode='HTML')
     await callback.answer()
 
 
@@ -97,10 +98,10 @@ async def change_teacher_page(callback: types.CallbackQuery):
 
     if callback.data == 'teachers_prev':
         await bot.edit_message_text(texts.SELECT_TEACHER, tg_id, callback.message.message_id,
-                                    reply_markup=keyboards.select_teacher_part1())
+                                    reply_markup=select_teacher_part_1())
     else:
         await bot.edit_message_text(texts.SELECT_TEACHER, tg_id, callback.message.message_id,
-                                    reply_markup=keyboards.select_teacher_part2())
+                                    reply_markup=select_teacher_part_2())
     await callback.answer()
 
 
@@ -114,7 +115,7 @@ async def get_teacher_schedule(callback: types.CallbackQuery):
 
     date = callback.data[:-1]
     if await check_date(date):
-        await bot.send_message(callback.from_user.id, texts.REST_DAY)
+        await bot.send_message(callback.from_user.id, texts.REST_DAY[date])
         await callback.answer()
         return
 
@@ -150,7 +151,7 @@ async def get_class_list(callback: types.CallbackQuery):
     tg_id = callback.from_user.id
 
     await bot.edit_message_text(f'Класс: {callback.data[:-1]}\nВыберите день с помощью кнопок ниже:', tg_id,
-                                callback.message.message_id, reply_markup=keyboards.select_day_for_class())
+                                callback.message.message_id, reply_markup=select_day_for_class())
     await callback.answer()
 
 
@@ -199,11 +200,11 @@ async def start(message: types.Message):
         user_db.save_user(tg_id, message.from_user.username, message.from_user.first_name, None, None, None)
         await message.answer(texts.START)
         await message.answer('Для начала у' + texts.GET_CLASS_NUMBER[1:],
-                             reply_markup=keyboards.select_class_num())
+                             reply_markup=select_class_num())
 
     elif user_db.get_state(tg_id) in [0, 1, 2]:
         user_db.set_state(message.from_user.id, 0)
-        await message.answer(texts.GET_CLASS_NUMBER, reply_markup=keyboards.select_class_num())
+        await message.answer(texts.GET_CLASS_NUMBER, reply_markup=select_class_num())
 
     else:
         await message.answer(f'{texts.START}\n\n{texts.MORE_INFO}')
@@ -226,7 +227,7 @@ async def get(message: types.Message):
         await process_messages(message)
         return
 
-    await message.answer('Введите дату или выберите из кнопок ниже:', reply_markup=keyboards.select_day())
+    await message.answer('Введите дату или выберите из кнопок ниже:', reply_markup=select_day())
 
 
 @dp.message_handler(commands=['class'])
@@ -235,7 +236,7 @@ async def get_for_class(message: types.Message):
     if not await process_checks(message.from_user.id, signup=False):
         return
 
-    await message.answer('Выберите класс с помощью кнопок ниже:', reply_markup=keyboards.select_class())
+    await message.answer('Выберите класс с помощью кнопок ниже:', reply_markup=select_class())
 
 
 @dp.message_handler(commands=['link'])
@@ -267,7 +268,7 @@ async def set_class(message: types.Message):
     if not await process_checks(message.from_user.id):
         return
 
-    await message.answer(texts.GET_CLASS_NUMBER, reply_markup=keyboards.select_class_num())
+    await message.answer(texts.GET_CLASS_NUMBER, reply_markup=select_class_num())
 
 
 @dp.message_handler(commands=['setgroup'])
@@ -280,7 +281,7 @@ async def set_group(message: types.Message):
         await set_class()
         return
 
-    await message.answer(texts.GET_GROUP, reply_markup=keyboards.select_group())
+    await message.answer(texts.GET_GROUP, reply_markup=select_group())
 
 
 @dp.message_handler(commands=['t', 'teacher'])
@@ -289,7 +290,7 @@ async def teacher(message: types.Message):
     if not await process_checks(message.from_user.id, signup=False):
         return
 
-    await message.answer(texts.SELECT_TEACHER, reply_markup=keyboards.select_teacher_part1())
+    await message.answer(texts.SELECT_TEACHER, reply_markup=select_teacher_part_1())
 
 
 @dp.message_handler(commands=['settings'])
@@ -356,12 +357,12 @@ async def process_messages(message: types.Message):
         # class processing
         user_db.set_state(tg_id, 0)
         await message.answer(texts.SIGNUP_ERROR)
-        await message.answer(texts.GET_CLASS_NUMBER, reply_markup=keyboards.select_class_num())
+        await message.answer(texts.GET_CLASS_NUMBER, reply_markup=select_class_num())
 
     elif state == 2:
         # group processing
         await message.answer(texts.SIGNUP_ERROR)
-        await message.answer(texts.GET_GROUP, reply_markup=keyboards.select_group())
+        await message.answer(texts.GET_GROUP, reply_markup=select_group())
 
     elif state == 3:
         # date processing
@@ -416,7 +417,7 @@ async def process_messages(message: types.Message):
         except DateException:
             await message.answer(texts.NO_SCHEDULE_ERROR)
         except ClasException:
-            await message.answer(texts.INVALID_CLASS_ERROR, reply_markup=keyboards.list_classes())
+            await message.answer(texts.INVALID_CLASS_ERROR, reply_markup=list_classes())
         except GroupException:
             await message.answer(texts.INVALID_GROUP_ERROR)
         except ParsingProcessException:
@@ -442,7 +443,7 @@ async def log(data: types.Message | types.CallbackQuery, teacher_name: str = Fal
 
 async def get_schedule(date: str, clas_number: int, clas_profile: str) -> str:
     if await check_date(date):
-        return texts.REST_DAY
+        return texts.REST_DAY[date]
 
     if clas_profile not in PROFILES:
         raise ClasException
@@ -492,7 +493,7 @@ async def get_schedule(date: str, clas_number: int, clas_profile: str) -> str:
 
 async def get_schedule_for_group(date: str, clas_number: int, clas_profile: str, group: int) -> str:
     if await check_date(date):
-        return texts.REST_DAY
+        return texts.REST_DAY[date]
     if clas_profile not in PROFILES:
         raise ClasException
     if group not in [1, 2]:
@@ -537,7 +538,7 @@ async def check_signup(id):
     if user_db.get_state(id) in [0, 1, 2]:
         user_db.set_state(id, 0)
         await bot.send_message(id, texts.SIGNUP_ERROR)
-        await bot.send_message(id, texts.GET_CLASS_NUMBER, reply_markup=keyboards.select_class_num())
+        await bot.send_message(id, texts.GET_CLASS_NUMBER, reply_markup=select_class_num())
         return False
     return True
 
@@ -563,5 +564,9 @@ async def is_on_update():
     return len(schedule) != 5
 
 
-if __name__ == '__main__':
+def main():
     executor.start_polling(dp, skip_updates=False)
+
+
+if __name__ == '__main__':
+    main()

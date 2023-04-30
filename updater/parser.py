@@ -1,7 +1,7 @@
 from openpyxl import load_workbook
 
-from configuration import CURRENT_TABLE, ALT_TEACHERS, ALT_PROFILES
-from database import ScheduleTable
+from app.config import CURRENT_TABLE, ALT_TEACHERS, ALT_PROFILES
+from app.data.database import ScheduleTable
 
 
 class TableParser:

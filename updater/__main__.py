@@ -4,11 +4,11 @@ import os
 
 import wget
 
-from configuration import GOOGLETABLE_URL, CURRENT_FILE, AVAILABLE_DAYS
-from parser import TableParser
+from app.config import GOOGLETABLE_URL, CURRENT_FILE
+from .parser import TableParser
 
-local_filename = f'resources/schedule/{CURRENT_FILE}'
-update_logger = open('logs/updates.log', 'a', encoding='utf8')
+local_filename = f'app/resources/schedule/{CURRENT_FILE}'
+update_logger = open('app/logs/updates.log', 'a', encoding='utf8')
 
 
 def update_table():
@@ -27,7 +27,11 @@ def update_table():
     update_logger.flush()
 
 
-if __name__ == '__main__':
+def main():
     while True:
         update_table()
         time.sleep(20 * 60)
+
+
+if __name__ == '__main__':
+    main()

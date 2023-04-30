@@ -9,5 +9,6 @@ class GroupException(Exception):
 class DateException(Exception):
     pass
 
+
 class ParsingProcessException(Exception):
     pass

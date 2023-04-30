@@ -1,6 +1,6 @@
 import sqlite3
 
-DB_PATH = 'lyceumbot.db'
+DB_PATH = 'app/data/lyceumbot.db'
 
 
 class UserTable:
