@@ -37,33 +37,34 @@ inline-кнопок.
 В этом разделе описан процесс внедрения и настройки Телеграм-бота на сервере.
 
 1. Чтобы бот работал, серверу потребуется модуль языка Python:
-   ```
+   ```console
    sudo apt —reinstall install python3 -y
    sudo apt —reinstall install python3-pip -y
    ```
 
 2. Теперь нам нужно установить удобный менеджер процессов PM2 и платформу Node.js с менеджером пакетов npm
    для её работы:
-   ```
+   ```console
    sudo apt install nodejs
    sudo apt install npm
    npm install pm2 -g
    ```
 
-3. Переносим файлы программы на сервер, переходим к директории `lyceumbot`, устанавливаем зависимости:
-   ```
+3. Клонируем репозиторий на сервер, переходим к директории `lyceumbot`, устанавливаем зависимости:
+   ```console
+   git clone https://github.com/skosarevv/lyceumbot
    cd lyceumbot
    pip3 install -r requirements.txt
    ```
 
 4. С помощью PM2 запускаем основной модуль бота и модуль автоматического обновления данных:
-   ```
+   ```console
    pm2 start "python3 -m app" --name "lyceumbot"
    pm2 start "python3 -m updater" --name "updater"
    ```
 
 5. Для мониторинга работы вводим команду:
-   ```
+   ```console
    pm2 list
    ```
 
