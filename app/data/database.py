@@ -3,7 +3,7 @@ import sqlite3
 DB_PATH = 'app/data/lyceumbot.db'
 
 
-class UserTable:
+class UserRepository:
     def __init__(self):
         self.con = sqlite3.connect(DB_PATH)
         self.cur = self.con.cursor()
@@ -84,7 +84,7 @@ class UserTable:
         self.con.commit()
 
 
-class ScheduleTable:
+class ScheduleRepository:
     def __init__(self):
         self.con = sqlite3.connect(DB_PATH)
         self.cur = self.con.cursor()

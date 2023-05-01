@@ -2,14 +2,14 @@ from openpyxl import load_workbook
 
 from app.config import CURRENT_TABLE
 from app.util.constants import ALT_TEACHERS, ALT_PROFILES
-from app.data.database import ScheduleTable
+from app.data.database import ScheduleRepository
 
 
 class TableParser:
     def __init__(self, file_path: str):
         self.wb = load_workbook(file_path)
         self.sheet = self.wb[CURRENT_TABLE]
-        self.schedule_db = ScheduleTable()
+        self.schedule_db = ScheduleRepository()
 
     def parse(self):
         merged_cells = self.sheet.merged_cells

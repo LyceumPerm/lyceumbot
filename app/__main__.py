@@ -4,19 +4,19 @@ import datetime
 from aiogram import Bot, Dispatcher, executor, types
 
 from app.util.exceptions import *
-from app.data.database import UserTable, ScheduleTable
+from app.data.database import UserRepository
 from app.config import TOKEN, SPAM_RESTRICTION, URL, MESSAGES_LOG_PATH
-from app.util.constants import PROFILES, ALT_PROFILES
+from app.util.constants import ALT_PROFILES
 from app.keyboards.classes import *
 from app.keyboards.teacher import *
+from app.util.formatter import *
 import app.util.texts as texts
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher(bot)
 
 message_logger = open(MESSAGES_LOG_PATH, 'a', encoding='utf8')
-user_db = UserTable()
-schedule_db = ScheduleTable()
+user_db = UserRepository()
 
 
 # CALLBACK HANDLERS
@@ -93,55 +93,19 @@ async def select_teacher(callback: types.CallbackQuery):
 @dp.callback_query_handler(text=['teachers_prev', 'teachers_next'])
 async def change_teacher_page(callback: types.CallbackQuery):
     await log(callback)
-
-    tg_id = callback.from_user.id
-
-    if callback.data == 'teachers_prev':
-        await bot.edit_message_text(texts.SELECT_TEACHER, tg_id, callback.message.message_id,
-                                    reply_markup=select_teacher_part_1())
-    else:
-        await bot.edit_message_text(texts.SELECT_TEACHER, tg_id, callback.message.message_id,
-                                    reply_markup=select_teacher_part_2())
+    await bot.edit_message_text(texts.SELECT_TEACHER, callback.from_user.id, callback.message.message_id,
+                                reply_markup=select_teacher_1() if callback.data == 'teachers_prev' else select_teacher_2())
     await callback.answer()
 
 
 @dp.callback_query_handler(text=list(map(lambda item: item + 't', AVAILABLE_DAYS)))
 async def get_teacher_schedule(callback: types.CallbackQuery):
-    tg_id = callback.from_user.id
-    if await is_on_update():
-        await bot.send_message(tg_id, texts.TABLE_UPDATING_ERROR)
-        await callback.answer()
-        return
-
-    date = callback.data[:-1]
-    if await check_date(date):
-        await bot.send_message(callback.from_user.id, texts.REST_DAY[date])
-        await callback.answer()
-        return
-
     teacher_name = callback.message.text[callback.message.text.index(':') + 2: callback.message.text.index('\n')]
-    schedule = schedule_db.get_for_teacher(date, teacher_name)
 
     await log(callback, teacher_name=teacher_name)
+    answer_text = await get_schedule_for_teacher(callback.data[:-1], teacher_name)
 
-    added_classes = []  # пары, которые уже добавлены в сообщение
-    answer_text = f'{date} • {teacher_name}\n\n'
-
-    for i in range(1, 6):
-        lessons = []
-        for line in schedule:
-            if line[2] == i:
-                lessons.append(line)
-        if lessons:
-            for clas in lessons:
-                if f'{i}{clas[5]}{PROFILES[clas[6] - 1]}' not in added_classes:
-                    answer_text += f'{i}. {clas[5]}{PROFILES[clas[6] - 1]} - {clas[3]}   ' \
-                                   f'[{clas[8] if clas[8] not in ["None", "", None] else " — "}]\n'
-                    added_classes.append(f'{i}{clas[5]}{PROFILES[clas[6] - 1]}')
-        else:
-            answer_text += f'{i}.\n'
-
-    await bot.send_message(tg_id, answer_text)
+    await bot.send_message(callback.from_user.id, answer_text)
     await callback.answer()
 
 
@@ -164,7 +128,7 @@ async def get_class_schedule(callback: types.CallbackQuery):
     class_number = int(callback.message.text[7:9])
     class_profile = callback.message.text[9:callback.message.text.find('\n')]
 
-    await bot.send_message(tg_id, await get_schedule(date, class_number, class_profile), parse_mode='HTML')
+    await bot.send_message(tg_id, await get_schedule_for_class(date, class_number, class_profile), parse_mode='HTML')
     await callback.answer()
 
 
@@ -199,8 +163,7 @@ async def start(message: types.Message):
     if not user_db.user_exists(tg_id):
         user_db.save_user(tg_id, message.from_user.username, message.from_user.first_name, None, None, None)
         await message.answer(texts.START)
-        await message.answer('Для начала у' + texts.GET_CLASS_NUMBER[1:],
-                             reply_markup=select_class_num())
+        await message.answer('Для начала у' + texts.GET_CLASS_NUMBER[1:], reply_markup=select_class_num())
 
     elif user_db.get_state(tg_id) in [0, 1, 2]:
         user_db.set_state(message.from_user.id, 0)
@@ -213,7 +176,6 @@ async def start(message: types.Message):
 @dp.message_handler(commands=['help'])
 async def get_help(message: types.Message):
     await log(message)
-
     await message.answer(texts.HELP, parse_mode='HTML')
 
 
@@ -222,11 +184,6 @@ async def get(message: types.Message):
     await log(message)
     if not await process_checks(message.from_user.id):
         return
-
-    if ' ' in message.text:
-        await process_messages(message)
-        return
-
     await message.answer('Введите дату или выберите из кнопок ниже:', reply_markup=select_day())
 
 
@@ -235,7 +192,6 @@ async def get_for_class(message: types.Message):
     await log(message)
     if not await process_checks(message.from_user.id, signup=False):
         return
-
     await message.answer('Выберите класс с помощью кнопок ниже:', reply_markup=select_class())
 
 
@@ -244,7 +200,6 @@ async def link(message: types.Message):
     await log(message)
     if not await process_checks(message.from_user.id, signup=False):
         return
-
     await message.answer('Ссылка на таблицу с расписанием:\n' + URL, disable_web_page_preview=True)
 
 
@@ -265,7 +220,6 @@ async def set_class(message: types.Message):
     await log(message)
     if not await process_checks(message.from_user.id):
         return
-
     await message.answer(texts.GET_CLASS_NUMBER, reply_markup=select_class_num())
 
 
@@ -287,8 +241,7 @@ async def teacher(message: types.Message):
     await log(message)
     if not await process_checks(message.from_user.id, signup=False):
         return
-
-    await message.answer(texts.SELECT_TEACHER, reply_markup=select_teacher_part_1())
+    await message.answer(texts.SELECT_TEACHER, reply_markup=select_teacher_1())
 
 
 @dp.message_handler(commands=['settings'])
@@ -296,7 +249,6 @@ async def settings(message: types.Message):
     await log(message)
     if not await process_checks(message.from_user.id):
         return
-
     await message.answer(texts.WIP)
 
 
@@ -305,8 +257,7 @@ async def bells(message: types.Message):
     await log(message)
     if not await process_checks(message.from_user.id):
         return
-
-    with open('resources/bells.jpg', 'rb') as photo:
+    with open('app/resources/bells.jpg', 'rb') as photo:
         await message.answer_photo(photo)
 
 
@@ -367,21 +318,11 @@ async def process_messages(message: types.Message):
         if not await process_checks(tg_id, signup=True, spam=False):
             return
 
-        if not message_text.startswith('/get'):
-            if not await process_checks(tg_id, signup=False, spam=True):
-                return
-
         clas_number = user_db.get_class_number(tg_id)
         clas_profile = user_db.get_class_profile(tg_id)
         group = user_db.get_group(tg_id)
 
-        if message_text.startswith('/get'):
-            if '.' in message_text:
-                date = message_text.split(' ')[1]
-            else:
-                date = message_text.split()[1] + '.' + message_text.split()[2]
-
-        elif re.fullmatch(r'\d\d([. ])\d\d', message_text):
+        if re.fullmatch(r'\d\d([. ])\d\d', message_text):
             date = '.'.join(message_text.split()) if ' ' in message_text else message_text
 
         elif re.fullmatch(r'\d\d\.\d\d .* .*', message_text):
@@ -439,83 +380,6 @@ async def log(data: types.Message | types.CallbackQuery, teacher_name: str = Fal
     message_logger.flush()
 
 
-async def get_schedule(date: str, clas_number: int, clas_profile: str) -> str:
-    if await check_date(date):
-        return texts.REST_DAY[date]
-
-    if clas_profile not in PROFILES:
-        raise ClasException
-
-    schedule = schedule_db.get(date, clas_number, clas_profile)
-    if len(schedule) != 10:
-        raise ParsingProcessException
-
-    result_text = f'{str(schedule[0][5]) + (PROFILES[schedule[0][6] - 1])} • {date}\n\n'
-
-    # ну и треш
-    # TODO переписать
-    for i in range(0, 10, 2):
-        lesson1 = schedule[i][3]
-        teacher1 = schedule[i][4]
-        classroom1 = schedule[i][8]
-
-        lesson2 = schedule[i + 1][3]
-        teacher2 = schedule[i + 1][4]
-        classroom2 = schedule[i + 1][8]
-
-        # не отображаем пятую пару, если её нет
-        if schedule[i][2] == 5 and lesson1 is None and lesson2 is None:
-            continue
-
-        if lesson1 is None:
-            lesson1 = '✖'
-            teacher1 = ''
-            classroom1 = 'None'
-        if lesson2 is None:
-            lesson2 = '✖'
-            teacher2 = ''
-            classroom2 = 'None'
-
-        if lesson1 == lesson2 and teacher1 == teacher2 and classroom1 == classroom2:
-            if lesson1 == '✖':
-                result_text += f'{schedule[i][2]}. {lesson1}\n'
-            else:
-                result_text += f'{schedule[i][2]}. {lesson1}{" (" + teacher1 + ")" if teacher1 else ""}   ' \
-                               f'[{classroom1 if classroom1 != "None" else " — "}]\n'
-        else:
-            result_text += f'{schedule[i][2]}. {lesson1}{" (" + teacher1 + ")" if teacher1 else ""} [{classroom1 if classroom1 != "None" else " — "}]\n' \
-                           f'     {lesson2}{" (" + teacher2 + ")" if teacher2 else ""} [{classroom2 if classroom2 != "None" else " — "}]\n'
-
-    return result_text
-
-
-async def get_schedule_for_group(date: str, clas_number: int, clas_profile: str, group: int) -> str:
-    if await check_date(date):
-        return texts.REST_DAY[date]
-    if clas_profile not in PROFILES:
-        raise ClasException
-    if group not in [1, 2]:
-        raise GroupException
-
-    schedule = schedule_db.get_for_group(date, clas_number, clas_profile, group)
-    if len(schedule) != 5:
-        raise ParsingProcessException
-
-    result_text = f'{str(schedule[0][5]) + (PROFILES[schedule[0][6] - 1])} • группа {group} • {date}\n\n'
-
-    for i in range(5):
-        if schedule[i][3] is not None:
-            classroom = schedule[i][8]
-            teacher_name = schedule[i][4]
-            result_text += f'{schedule[i][2]}. {schedule[i][3]}{" (" + teacher_name + ")" if teacher_name else ""}   ' \
-                           f'[{classroom if classroom != "None" else " — "}]\n'
-        else:
-            if schedule[i][2] != 5:
-                result_text += f'{i + 1}. ✖ \n'
-
-    return result_text
-
-
 # если не прошли проверки - возвращает False
 async def process_checks(id, signup=True, spam=False, user_exists=True):
     if user_exists and not user_db.user_exists(id):
@@ -551,15 +415,6 @@ async def check_spam(id):
 
     user_db.set_lastmessage(id, now)
     return True
-
-
-async def check_date(date):
-    return date in ['01.05']
-
-
-async def is_on_update():
-    schedule = schedule_db.get_for_group(AVAILABLE_DAYS[-1], 11, 'эк', 2)
-    return len(schedule) != 5
 
 
 def main():

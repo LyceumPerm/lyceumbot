@@ -13,7 +13,8 @@ def select_day_for_teacher():
     return keyboard
 
 
-def select_teacher_part_1():
+# select teacher: page 1
+def select_teacher_1():
     buttons = []
     for i in range(0, 24, 3):
         buttons.append(
@@ -28,7 +29,8 @@ def select_teacher_part_1():
     return InlineKeyboardMarkup(inline_keyboard=buttons, row_width=3)
 
 
-def select_teacher_part_2():
+# select teacher: page 2
+def select_teacher_2():
     buttons = []
     for i in range(24, 48, 3):
         buttons.append(
