@@ -1,12 +1,29 @@
+import os
 import sqlite3
 
 DB_PATH = 'app/data/lyceumbot.db'
 
 
-class UserRepository:
+class AbstractRepository:
     def __init__(self):
+        need_init = False
+        if not os.path.exists(DB_PATH):
+            need_init = True
+
         self.con = sqlite3.connect(DB_PATH)
         self.cur = self.con.cursor()
+
+        if need_init:
+            with open('app/resources/db/init.sql', encoding='utf8') as file1:
+                self.cur.executescript(file1.read())
+            with open('app/resources/db/populate.sql', encoding='utf8') as file2:
+                self.cur.executescript(file2.read())
+            self.con.commit()
+
+
+class UserRepository(AbstractRepository):
+    def __init__(self):
+        super().__init__()
 
     def save_user(self, telegram_id, username, name, clas_number, clas_profile, group):
         query = 'INSERT INTO user (telegram_id, username, name, class_number, class_profile, class_group)  VALUES (?, ?, ?, ?, (SELECT id FROM profile WHERE name = ?), ?);'
@@ -84,10 +101,9 @@ class UserRepository:
         self.con.commit()
 
 
-class ScheduleRepository:
+class ScheduleRepository(AbstractRepository):
     def __init__(self):
-        self.con = sqlite3.connect(DB_PATH)
-        self.cur = self.con.cursor()
+        super().__init__()
 
     def save(self, date: str, number: int, name: str, teacher: str, clas_number: int, clas_profile: str, group: int,
              classroom: str):
