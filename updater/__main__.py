@@ -17,7 +17,7 @@ def update_table():
     update_logger.write(str(datetime.datetime.now()) + '\n')
     update_logger.flush()
 
-    wget.download(URL + '/export?exportFormat=xlsx', SCHEDULE_PATH)
+    wget.download(URL + '/export?exportFormat=xlsx', SCHEDULE_PATH, bar=None)
     parser = TableParser(SCHEDULE_PATH)
     parser.parse()
     parser.__del__()
