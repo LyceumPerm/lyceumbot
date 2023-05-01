@@ -19,7 +19,7 @@ async def get_schedule_for_class(date: str, clas_number: int, clas_profile: str)
 
     schedule = schedule_repository.get(date, clas_number, clas_profile)
     if len(schedule) != 10:
-        raise ParsingProcessException
+        return texts.TABLE_UPDATING_ERROR
 
     result_text = f'{str(schedule[0][5]) + (PROFILES[schedule[0][6] - 1])} • {date}\n\n'
 
