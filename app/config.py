@@ -6,8 +6,8 @@ SPAM_RESTRICTION = 2
 
 # data
 URL = 'https://docs.google.com/spreadsheets/d/1tGbeevMu_7_n_pKDFjH3cNFNigClVW3v'
-AVAILABLE_DAYS = ['01.05', '02.05', '03.05', '04.05', '05.05']
-CURRENT_TABLE = '2.05 - 5.05 2 неделя'
+AVAILABLE_DAYS = ['08.05', '09.05', '10.05', '11.05', '12.05']
+CURRENT_TABLE = '10.05-12.05 неделя1'
 
 # file path
 SCHEDULE_PATH = 'app/resources/schedule.xlsx'
